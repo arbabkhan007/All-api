@@ -52,7 +52,7 @@ The finance-planner line carries your **real revenue potential** (highest prices
 ## 5. Brand strategy (what the new design encodes)
 
 - **Concept:** *Novelty* (the sparkle — fresh, playful, creative) × *Utility* (the solid, geometric N — structure, organization, function). One mark says "creative *and* useful," which is exactly your product mix.
-- **Palette:** warm cream, deep plum ink, coral, sage, gold — warm and feminine-leaning, but grounded enough for the finance-spreadsheet buyer. Deliberately *not* the pink/lavender template look of most competing Etsy shops.
+- **Palette:** eco pastels — oat cream, pistachio, light blue, pink, light brown, with brown-ink text and leaf accents. Soft, nature-forward, and aesthetic; reads as handmade and eco-friendly while staying clean enough for the finance-spreadsheet buyer.
 - **Type:** Quicksand (rounded geometric sans) — friendly but tidy.
 - **Banner job:** tell visitors in 3 seconds what you sell — crochet patterns, finance planners, kids' printables, travel & events — plus instant download + location.
 

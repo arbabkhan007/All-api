@@ -10,15 +10,17 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 S = 2  # supersample factor
 FONT = "fonts/Quicksand-{}.ttf"
 
-# ---------- palette ----------
-CREAM    = (253, 248, 241)
-INK      = (56, 38, 66)
-INK_SOFT = (122, 102, 134)
-CORAL    = (237, 122, 85)
-SAGE     = (148, 174, 143)
-GOLD     = (228, 178, 92)
-BLUSH    = (246, 226, 210)
-WHITE    = (255, 255, 255)
+# ---------- palette (eco pastels) ----------
+CREAM      = (250, 246, 236)   # warm oat milk
+INK        = (92, 75, 58)      # deep warm brown (text)
+INK_SOFT   = (146, 124, 102)   # muted taupe (secondary text)
+PISTACHIO  = (163, 197, 133)   # pistachio
+PISTACHIO_DARK = (140, 175, 104)  # badge base
+LIGHT_BLUE = (166, 213, 240)   # powder sky
+PINK       = (240, 158, 182)   # rose pink
+LIGHT_BROWN= (201, 168, 118)   # caramel / sand
+CARAMEL    = (217, 179, 128)   # sparkle gold-brown
+WHITE      = (255, 255, 255)
 
 def f(weight, size):
     return ImageFont.truetype(FONT.format(weight), int(round(size * S)))
@@ -76,31 +78,44 @@ def rounded_shadow(img, box, radius, color=INK, alpha=55, blur=16, dy=7):
     img.alpha_composite(layer)
 
 # ---------- badge (N monogram) ----------
+def draw_leaf(img, cx, cy, length, angle, color, alpha=255):
+    """Small eco leaf: rotated lens shape with a midrib."""
+    L = int(px(length))
+    fill = color if len(color) == 4 else color + (alpha,)
+    cell = Image.new("RGBA", (L + 8, int(L * 0.6) + 8), (0, 0, 0, 0))
+    cd = ImageDraw.Draw(cell)
+    cd.ellipse([4, 4, L + 4, int(L * 0.6) + 4], fill=fill)
+    cd.line([L * 0.12, cell.height / 2, L * 0.88, cell.height / 2],
+            fill=(255, 255, 255, 90), width=2)
+    cell = cell.rotate(angle, resample=Image.BICUBIC, expand=True)
+    img.alpha_composite(cell, (int(px(cx) - cell.width / 2), int(px(cy) - cell.height / 2)))
+
 def draw_badge(img, x, y, size, shadow=False):
     if shadow:
         rounded_shadow(img, (x, y, x + size, y + size), size * 0.24)
     d = ImageDraw.Draw(img)
     d.rounded_rectangle([px(x), px(y), px(x + size), px(y + size)],
-                        radius=px(size * 0.24), fill=INK + (255,))
+                        radius=px(size * 0.24), fill=PISTACHIO_DARK + (255,))
     inset = size * 0.05
     d.rounded_rectangle([px(x + inset), px(y + inset), px(x + size - inset), px(y + size - inset)],
-                        radius=px(size * 0.205), outline=(255, 255, 255, 24), width=int(round(px(2))))
+                        radius=px(size * 0.205), outline=(255, 255, 255, 30), width=int(round(px(2))))
     cw, ch = size * 0.42, size * 0.54
     cx, cy = x + size / 2, y + size / 2
     xl, xr = cx - cw / 2, cx + cw / 2
     yt, yb = cy - ch / 2, cy + ch / 2
     sw = size * 0.115
+    cream = (255, 253, 246, 255)
     def line(p1, p2, color):
         d.line([px(p1[0]), px(p1[1]), px(p2[0]), px(p2[1])], fill=color, width=int(round(px(sw))))
         for p in (p1, p2):
             d.ellipse([px(p[0] - sw / 2), px(p[1] - sw / 2), px(p[0] + sw / 2), px(p[1] + sw / 2)], fill=color)
-    line((xl, yb), (xl, yt), CREAM + (255,))
-    line((xr, yb), (xr, yt), CREAM + (255,))
-    line((xl, yt), (xr, yb), CORAL + (255,))
-    draw_sparkle(d, x + size * 0.775, y + size * 0.245, size * 0.072, GOLD + (255,))
+    line((xl, yb), (xl, yt), cream)
+    line((xr, yb), (xr, yt), cream)
+    line((xl, yt), (xr, yb), PINK + (255,))
+    draw_sparkle(d, x + size * 0.775, y + size * 0.245, size * 0.072, CARAMEL + (255,))
 
 # ---------- wordmark with sparkle i-dot ----------
-def draw_wordmark(img, word, x, y, size, color=INK, dot_color=CORAL):
+def draw_wordmark(img, word, x, y, size, color=INK, dot_color=PINK):
     """word drawn at logical (x, y); the i dot is replaced by a four-point sparkle."""
     font = f(700, size)
     d = ImageDraw.Draw(img)
@@ -147,10 +162,10 @@ def make_square_logo():
     CW = 800  # logical; canvas rendered at 2x
     img = Image.new("RGBA", (px(CW), px(CW)), CREAM + (255,))
     d = ImageDraw.Draw(img)
-    draw_sparkle(d, CW * 0.088, CW * 0.098, 12, GOLD + (255,))
-    draw_sparkle(d, CW * 0.912, CW * 0.125, 8, CORAL + (255,))
-    draw_sparkle(d, CW * 0.928, CW * 0.898, 11, SAGE + (255,))
-    draw_sparkle(d, CW * 0.078, CW * 0.902, 7, GOLD + (220,))
+    draw_sparkle(d, CW * 0.088, CW * 0.098, 12, CARAMEL + (255,))
+    draw_sparkle(d, CW * 0.912, CW * 0.125, 8, PINK + (255,))
+    draw_leaf(img, CW * 0.928, CW * 0.898, 26, -35, PISTACHIO + (255,))
+    draw_leaf(img, CW * 0.078, CW * 0.902, 20, 30, LIGHT_BLUE + (255,))
     badge_s = 320
     bx = (CW - badge_s) / 2
     by = 70
@@ -165,7 +180,7 @@ def make_square_logo():
     tag = "S T O R E"
     tw = text_w(d, tag, tag_font)
     ty = wm_y + glyph_h(f(700, wm_size)) + 21
-    dtext(d, (CW - tw) / 2, ty, tag, tag_font, CORAL + (255,))
+    dtext(d, (CW - tw) / 2, ty, tag, tag_font, PINK + (255,))
     img.resize((800, 800), Image.LANCZOS).save("out/logo-shop-800.png")
     img.resize((400, 400), Image.LANCZOS).save("out/logo-shop-400.png")
     img.resize((200, 200), Image.LANCZOS).save("out/logo-shop-200.png")
@@ -201,16 +216,20 @@ def make_lockup(path):
 def make_banner():
     BW, BH = 2400, 600
     img = Image.new("RGBA", (BW, BH), CREAM + (255,))
-    soft_blob(img, 2200, 20, 400, BLUSH, 190)
-    soft_blob(img, 60, 640, 360, (215, 229, 209), 160)
-    soft_blob(img, 1200, -80, 280, (250, 236, 205), 140)
-    dot_grid(img, 30, 1.7, SAGE, 50)
+    soft_blob(img, 2200, 20, 400, LIGHT_BLUE, 140)
+    soft_blob(img, 60, 640, 360, PINK, 120)
+    soft_blob(img, 1200, -80, 280, PISTACHIO, 130)
+    soft_blob(img, 460, 640, 240, LIGHT_BROWN, 80)
+    dot_grid(img, 30, 1.7, PISTACHIO, 62)
     d = ImageDraw.Draw(img)
-    draw_sparkle(d, 1122, 62, 14, GOLD + (255,))
-    draw_sparkle(d, 588, 250, 8, CORAL + (255,))
-    draw_sparkle(d, 1080, 256, 8, SAGE + (255,))
-    draw_sparkle(d, 646, 56, 6, GOLD + (220,))
-    draw_sparkle(d, 1168, 152, 9, CORAL + (170,))
+    draw_sparkle(d, 1122, 62, 14, PINK + (255,))
+    draw_sparkle(d, 588, 250, 8, CARAMEL + (255,))
+    draw_sparkle(d, 1080, 256, 8, LIGHT_BLUE + (255,))
+    draw_sparkle(d, 646, 56, 6, PISTACHIO + (255,))
+    draw_sparkle(d, 1168, 152, 9, PINK + (170,))
+    draw_leaf(img, 1118, 270, 22, -30, PISTACHIO + (255,))
+    draw_leaf(img, 606, 66, 18, 25, LIGHT_BROWN + (255,))
+    draw_leaf(img, 1176, 30, 20, -45, PISTACHIO + (230,))
     # dotted divider
     for yy in range(52, 250, 13):
         d.ellipse([px(548) - px(1.8), px(yy) - px(1.8), px(548) + px(1.8), px(yy) + px(1.8)],
@@ -236,8 +255,8 @@ def make_banner():
     tl_w = text_w(d, tagline, tl_font)
     dtext(d, cx - tl_w / 2, 78, tagline, tl_font, INK + (255,))
     chips = [
-        ("Crochet Patterns", CORAL), ("Finance Planners", SAGE),
-        ("Kids' Printables", GOLD), ("Travel & Events", (186, 148, 180)),
+        ("Crochet Patterns", PINK), ("Finance Planners", PISTACHIO),
+        ("Kids' Printables", LIGHT_BLUE), ("Travel & Events", LIGHT_BROWN),
     ]
     chip_font = f(600, 18)
     def chip(t):
