@@ -1,4 +1,4 @@
-# Hearth & Timber — Home Renovation Management System
+# Novality Store — Home Renovation Management System
 
 A complete renovation operating system in a single workbook. It opens in **Microsoft Excel** and **Google Sheets**.
 
@@ -12,7 +12,7 @@ Every room, material, contractor, expense, document, task, photo, warranty and m
 
 | What | Where |
 |---|---|
-| **Excel / Google Sheets workbook** | [`Hearth_and_Timber_Home_Renovation_System.xlsx`](Hearth_and_Timber_Home_Renovation_System.xlsx) |
+| **Excel / Google Sheets workbook** | [`Novality_Store_Home_Renovation_System.xlsx`](Novality_Store_Home_Renovation_System.xlsx) |
 | **Google Sheets companion** | [`google_apps_script/Code.gs`](google_apps_script/Code.gs) |
 | **Regenerate** | `python generate_workbook.py` |
 
@@ -26,7 +26,7 @@ Every room, material, contractor, expense, document, task, photo, warranty and m
 2. Right-click → **Open with → Google Sheets**.
 3. **File → Save as Google Sheets** (keeps formulas, colors, charts, dropdowns).
 4. Optional but recommended: **Extensions → Apps Script** → paste `google_apps_script/Code.gs` → Save → reload.
-5. A **Hearth & Timber** menu appears: add expenses/tasks, highlight overdue work, email maintenance reminders.
+5. A **Novality Store** menu appears: add expenses/tasks, highlight overdue work, email maintenance reminders.
 
 Share the Google Sheet with your designer, GC, and trades. Use **Commenter** for contractors who should not edit budget cells.
 
@@ -111,7 +111,11 @@ Share the Google Sheet with your designer, GC, and trades. Use **Commenter** for
 | Contingency | Below the 10% floor — exterior water feature is on hold |
 | Second home | Columbia Gorge cabin bath (`PRJ-002`) in design, so multi-property is visible |
 
-Ivory-yellow cells are **inputs**. Sand-grey cells are **formulas**. Do not type over formulas; copy them down when you add rows.
+Ivory cells are **unlocked inputs**. Sand-grey cells are **locked formulas**.
+
+**Author:** `premium`  
+**Unprotect password:** `premium`  
+Review → Unprotect Sheet → `premium` if you must edit a formula. Re-protect after.
 
 ---
 
@@ -175,7 +179,7 @@ pip install -r requirements.txt
 python generate_workbook.py
 ```
 
-Output: `Hearth_and_Timber_Home_Renovation_System.xlsx`
+Output: `Novality_Store_Home_Renovation_System.xlsx`
 
 Edit sample data in `hrms/data.py`, styles in `hrms/styles.py`, sheet layout in `hrms/workbook.py`.
 
@@ -199,4 +203,4 @@ See **Roles & Permissions** for the access matrix the live product should enforc
 
 ---
 
-Hearth & Timber  ·  Forest, sand, terracotta  ·  A digital twin of the home
+Novality Store  ·  Forest, sand, terracotta  ·  A digital twin of the home

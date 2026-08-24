@@ -4,7 +4,7 @@ The `.xlsx` **is** the Google Sheet. Google Sheets opens Excel files with formul
 
 ```
 Google Drive
-   └─ upload Hearth_and_Timber_Home_Renovation_System.xlsx
+   └─ upload Novality_Store_Home_Renovation_System.xlsx
          └─ Open with Google Sheets
                └─ File → Save as Google Sheets
                      └─ share with designer / GC / trades
@@ -21,7 +21,7 @@ Google Drive
 
 Point everyone at **Dashboard**. Change **Settings → Active Project ID** (`PRJ-001` Maplewood, `PRJ-002` cabin) to switch homes.
 
-## Optional: the Hearth & Timber menu
+## Optional: the Novality Store menu
 
 Follow [`google_apps_script/README.md`](google_apps_script/README.md) to add “Add expense”, maintenance emails, and overdue highlighting.
 

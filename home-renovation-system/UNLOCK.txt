@@ -1,0 +1,19 @@
+NOVALITY STORE
+Home Renovation Management System
+
+Author:            premium
+Unprotect password: premium
+
+Excel
+  Review → Unprotect Sheet → premium
+
+  Ivory cells are unlocked. Type there.
+  Sand-grey cells are locked formulas. Do not type there unless you
+  intentionally unprotect.
+
+Google Sheets
+  Data → Protect sheets and ranges
+  (Excel protection becomes sheet protections after you Save as Google Sheets.
+   Re-apply if a convert drops them.)
+
+Re-protect after any formula edit so the next person cannot wipe the math.

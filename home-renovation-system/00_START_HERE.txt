@@ -1,0 +1,16 @@
+NOVALITY STORE — Home Renovation Management System
+Author: premium
+Unprotect password: premium
+
+1. Open Novality_Store_Home_Renovation_System.xlsx in Excel
+   or upload it to Google Drive → Open with Google Sheets.
+
+2. Read UNLOCK.txt (password) and README.md (how the 35 sheets work).
+
+3. To sell on Etsy: open etsy_listing_kit/ETSY_LISTING.md
+   Images are in etsy_listing_kit/images/ (square, landscape, portrait, story).
+
+4. To rebuild or customize: source is in SOURCE/ and also
+   concatenated in SOURCE/SOURCE_CODE.txt.
+
+5. Integrity of this build: INTEGRITY_REPORT.md (PASS).
