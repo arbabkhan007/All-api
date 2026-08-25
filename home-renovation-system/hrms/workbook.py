@@ -433,11 +433,12 @@ def build_design(wb):
 
 
 def build_ai(wb):
+    rows = [r + [None] for r in D.AI_INSIGHTS]
     ws, last = build_list_sheet(
         wb, "AI Insights", INFO,
         "Renovation assistant  ·  budget, materials, schedule, contractor comparison, photo analysis",
-        D.HEADERS["AI Insights"], D.AI_INSIGHTS,
-        [12, 12, 12, 10, 14, 12, 56, 64, 14, 14, 36],
+        D.HEADERS["AI Insights"], rows,
+        [12, 12, 12, 10, 14, 12, 56, 64, 14, 14, 36, 12],
         date_cols=[2], money_cols=[9],
         validations=[
             ("=Insight_Severity", "F5:F80"),
@@ -445,10 +446,18 @@ def build_ai(wb):
         ],
         status_col=6,
         status_map={"Info": INFO, "Opportunity": SUCCESS, "Warning": WARNING, "Critical": DANGER},
+        last_col=12,
     )
     _status_cf(ws, "J", 5, max(last, 80), {
         "New": INFO, "Accepted": SUCCESS, "In Progress": ACCENT, "Dismissed": TEXT_MUTED, "Resolved": PRIMARY,
     })
+    for r in range(5, last + 1):
+        ws.cell(r, 12).value = (
+            f'=IF(AND($C{r}=ActiveProject,OR($J{r}="New",$J{r}="In Progress")),1,0)'
+        )
+        ws.cell(r, 12).fill = fill(FORMULA_BG)
+        ws.cell(r, 12).border = THIN
+        ws.cell(r, 12).font = font(10)
     return ws, last
 
 
@@ -520,11 +529,12 @@ def build_budget(wb):
 
 
 def build_expenses(wb):
+    rows = [r + [None] for r in D.EXPENSES]
     ws, last = build_list_sheet(
         wb, "Expenses", ACCENT,
         "Every dollar  ·  Planned / Committed / Paid  ·  add rows below, keep Status valid",
-        D.HEADERS["Expenses"], D.EXPENSES,
-        [12, 12, 12, 10, 14, 24, 36, 12, 14, 12, 16, 16],
+        D.HEADERS["Expenses"], rows,
+        [12, 12, 12, 10, 14, 24, 36, 12, 14, 12, 16, 16, 12],
         date_cols=[2], money_cols=[8],
         validations=[
             ("=Budget_Category", "E5:E500"),
@@ -533,8 +543,13 @@ def build_expenses(wb):
         ],
         status_col=10,
         status_map={"Paid": SUCCESS, "Committed": WARNING, "Planned": INFO, "Void": TEXT_MUTED},
+        last_col=13,
     )
-    # highlight amount
+    for r in range(5, last + 1):
+        ws.cell(r, 13).value = f'=IF($C{r}=ActiveProject,COUNTIF($C$5:$C{r},ActiveProject),"")'
+        ws.cell(r, 13).fill = fill(FORMULA_BG)
+        ws.cell(r, 13).border = THIN
+        ws.cell(r, 13).font = font(10)
     ws.conditional_formatting.add(
         f"H5:H{max(last, 200)}",
         ColorScaleRule(start_type="min", start_color="F8F6F1",
@@ -618,20 +633,6 @@ def build_finance(wb):
         cell.fill = fill(PRIMARY)
         cell.alignment = align("center", "center")
         cell.border = THIN
-    # pull first 12 rooms of active project via INDEX/MATCH is hard; list known rooms with SUMIF
-    # Use Rooms sheet
-    for i in range(12):
-        r = 15 + i
-        # Room name from Rooms where project = active, nth match approximated by listing Rooms!C
-        ws.cell(r, 8, f'=IFERROR(INDEX(Rooms!$C:$C,SMALL(IF(Rooms!$B$5:$B$80=ActiveProject,ROW(Rooms!$B$5:$B$80)),{i+1})),"")')
-        # Array formulas don't work the same in Excel without CSE; Google Sheets uses ARRAYFORMULA.
-        # Safer: reference Rooms rows directly (rooms 5-16 are PRJ-001 mostly).
-        # We'll fill static room IDs from data for reliability, formulas for money.
-    # overwrite with reliable formulas using Rooms columns
-    for i, room in enumerate(D.ROOMS):
-        if room[1] != "PRJ-001":
-            continue
-        # find display index among PRJ-001
     prj_rooms = [rm for rm in D.ROOMS if rm[1] == "PRJ-001"]
     for i, rm in enumerate(prj_rooms):
         r = 15 + i
@@ -827,12 +828,12 @@ def build_jobs(wb):
 # ===========================================================================
 def build_tasks(wb):
     headers = D.HEADERS["Tasks"]
-    rows = [r + [None, None] for r in D.TASKS]
+    rows = [r + [None, None, None] for r in D.TASKS]
     ws, last = build_list_sheet(
         wb, "Tasks", ACCENT,
         "Kanban fields  ·  To Do → Scheduled → In Progress → Inspection → Completed",
         headers, rows,
-        [12, 12, 10, 28, 40, 16, 18, 14, 10, 12, 12, 10, 12, 10, 28, 10, 12],
+        [12, 12, 10, 28, 40, 16, 18, 14, 10, 12, 12, 10, 12, 10, 28, 10, 12, 12],
         date_cols=[10, 11], money_cols=[12], pct_cols=[14],
         validations=[
             ("=Task_Status", "H5:H200"),
@@ -844,7 +845,7 @@ def build_tasks(wb):
             "To Do": TEXT_MUTED, "Scheduled": WARNING, "In Progress": ACCENT,
             "Inspection": INFO, "Completed": SUCCESS, "Blocked": DANGER,
         },
-        last_col=17,
+        last_col=18,
     )
     for r in range(5, last + 1):
         ws.cell(r, 16).value = f'=IF(OR($A{r}="",$K{r}=""),"", $K{r}-AsOfDate)'
@@ -853,12 +854,19 @@ def build_tasks(wb):
             f'IF($K{r}<AsOfDate,"Overdue",'
             f'IF($K{r}<=AsOfDate+7,"Due Soon","On Track"))))'
         )
+        ws.cell(r, 18).value = (
+            f'=IF(OR($A{r}="",$H{r}="Completed",$B{r}<>ActiveProject),"",'
+            f'COUNTIFS($B$5:$B{r},ActiveProject,$H$5:$H{r},"<>Completed"))'
+        )
         ws.cell(r, 16).fill = fill(FORMULA_BG)
         ws.cell(r, 17).fill = fill(FORMULA_BG)
+        ws.cell(r, 18).fill = fill(FORMULA_BG)
         ws.cell(r, 16).border = THIN
         ws.cell(r, 17).border = THIN
+        ws.cell(r, 18).border = THIN
         ws.cell(r, 16).font = font(10)
         ws.cell(r, 17).font = font(10)
+        ws.cell(r, 18).font = font(10)
         ws.cell(r, 16).alignment = align("center", "center")
         ws.cell(r, 17).alignment = align("center", "center")
     _status_cf(ws, "Q", 5, max(last, 200), {
@@ -956,13 +964,13 @@ def build_timeline(wb):
 # ===========================================================================
 def build_materials(wb):
     headers = D.HEADERS["Materials"]
-    # Source has no Line Total (col 11) or Open Qty (col 22) — both are formulas.
-    rows = [r[:10] + [None] + r[10:] + [None] for r in D.MATERIALS]
+    # Source has no Line Total (col 11), Open Qty (col 22), or Shop Rank (col 23).
+    rows = [r[:10] + [None] + r[10:] + [None, None] for r in D.MATERIALS]
     ws, last = build_list_sheet(
         wb, "Materials", WARNING,
         "Procurement  ·  Required → Quoted → Approved → Ordered → Shipped → Delivered → Installed",
         headers, rows,
-        [12, 12, 10, 28, 16, 14, 12, 12, 8, 12, 12, 22, 12, 12, 12, 12, 12, 14, 12, 12, 14, 10],
+        [12, 12, 10, 28, 16, 14, 12, 12, 8, 12, 12, 22, 12, 12, 12, 12, 12, 14, 12, 12, 14, 10, 12],
         date_cols=[19, 20], money_cols=[10, 11],
         validations=[("=Material_Status", "P5:P200")],
         status_col=16,
@@ -971,18 +979,25 @@ def build_materials(wb):
             "Shipped": ACCENT, "Delivered": INFO, "Installed": SUCCESS,
             "Returned": DANGER, "Backordered": DANGER,
         },
-        last_col=22,
+        last_col=23,
     )
     for r in range(5, last + 1):
         ws.cell(r, 11).value = f'=IF($A{r}="","",$H{r}*$J{r})'
         ws.cell(r, 11).number_format = CUR
         ws.cell(r, 22).value = f'=IF($A{r}="","",$H{r}-$N{r})'
+        ws.cell(r, 23).value = (
+            f'=IF(OR($P{r}="Required",$P{r}="Quoted",$P{r}="Approved"),'
+            f'COUNTIF($P$5:$P{r},"Required")+COUNTIF($P$5:$P{r},"Quoted")+COUNTIF($P$5:$P{r},"Approved"),"")'
+        )
         ws.cell(r, 11).fill = fill(FORMULA_BG)
         ws.cell(r, 22).fill = fill(FORMULA_BG)
+        ws.cell(r, 23).fill = fill(FORMULA_BG)
         ws.cell(r, 11).border = THIN
         ws.cell(r, 22).border = THIN
+        ws.cell(r, 23).border = THIN
         ws.cell(r, 11).font = font(10)
         ws.cell(r, 22).font = font(10)
+        ws.cell(r, 23).font = font(10)
     return ws, last
 
 
@@ -997,44 +1012,32 @@ def build_suppliers(wb):
 
 def build_shopping(wb):
     ws = _sheet(wb, "Shopping List", ACCENT, 10,
-                "Auto-built from Materials still Required / Quoted / Approved  ·  refresh by editing Materials")
+                "Items still Required / Quoted / Approved  ·  INDEX/MATCH on Materials Shop Rank (Excel-safe)")
     headers = ["SKU / QR", "Product", "Room", "Qty", "Unit", "Est. Unit $", "Est. Total", "Supplier", "Status", "Project"]
     header_row(ws, 4, headers)
-    # FILTER is supported in Excel 365 and Google Sheets. Provide a compatible INDEX/SMALL fallback
-    # plus a FILTER formula in a note. We'll generate a static-looking live list with INDEX/SMALL.
-    for i in range(25):
+    cols = [
+        (1, "Materials!$F:$F"),
+        (2, "Materials!$D:$D"),
+        (3, "Materials!$C:$C"),
+        (4, "Materials!$H:$H"),
+        (5, "Materials!$I:$I"),
+        (6, "Materials!$J:$J"),
+        (7, "Materials!$K:$K"),
+        (8, "Materials!$L:$L"),
+        (9, "Materials!$P:$P"),
+        (10, "Materials!$B:$B"),
+    ]
+    for i in range(20):
         r = 5 + i
-        # nth material whose status is Required/Quoted/Approved
-        ws.cell(r, 10).value = (
-            f'=IFERROR(INDEX(Materials!$B:$B,SMALL(IF((Materials!$P$5:$P$200="Required")+(Materials!$P$5:$P$200="Quoted")+(Materials!$P$5:$P$200="Approved"),ROW(Materials!$P$5:$P$200)),{i+1})),"")'
-        )
-        # Array formulas: Excel 365 and Google Sheets both calculate these as dynamic arrays if entered.
-        # To maximize compatibility, also write a Google-friendly FILTER block starting at row 32.
-        for c in range(1, 11):
+        n = i + 1
+        for c, src in cols:
+            ws.cell(r, c).value = f'=IFERROR(INDEX({src},MATCH({n},Materials!$W:$W,0)),"")'
             ws.cell(r, c).fill = fill(WHITE if i % 2 == 0 else ROW_ALT)
             ws.cell(r, c).border = THIN
             ws.cell(r, c).font = font(10)
-    # Simpler reliable approach: use helper column already on Materials? 
-    # We'll put FILTER formula for Google Sheets / Excel 365 in A5 as a spilled range instruction.
-    # Clear the INDEX formulas and use FILTER (works in both modern Excel and Sheets).
-    for r in range(5, 30):
-        for c in range(1, 11):
-            ws.cell(r, c).value = None
-    # Place FILTER formulas in row 5 (spill). Google Sheets and Excel 365 support FILTER.
-    ws["A5"] = '=IFERROR(FILTER(Materials!F5:F200,(Materials!P5:P200="Required")+(Materials!P5:P200="Quoted")+(Materials!P5:P200="Approved")),"")'
-    ws["B5"] = '=IFERROR(FILTER(Materials!D5:D200,(Materials!P5:P200="Required")+(Materials!P5:P200="Quoted")+(Materials!P5:P200="Approved")),"")'
-    ws["C5"] = '=IFERROR(FILTER(Materials!C5:C200,(Materials!P5:P200="Required")+(Materials!P5:P200="Quoted")+(Materials!P5:P200="Approved")),"")'
-    ws["D5"] = '=IFERROR(FILTER(Materials!H5:H200,(Materials!P5:P200="Required")+(Materials!P5:P200="Quoted")+(Materials!P5:P200="Approved")),"")'
-    ws["E5"] = '=IFERROR(FILTER(Materials!I5:I200,(Materials!P5:P200="Required")+(Materials!P5:P200="Quoted")+(Materials!P5:P200="Approved")),"")'
-    ws["F5"] = '=IFERROR(FILTER(Materials!J5:J200,(Materials!P5:P200="Required")+(Materials!P5:P200="Quoted")+(Materials!P5:P200="Approved")),"")'
-    ws["G5"] = '=IFERROR(FILTER(Materials!K5:K200,(Materials!P5:P200="Required")+(Materials!P5:P200="Quoted")+(Materials!P5:P200="Approved")),"")'
-    ws["H5"] = '=IFERROR(FILTER(Materials!L5:L200,(Materials!P5:P200="Required")+(Materials!P5:P200="Quoted")+(Materials!P5:P200="Approved")),"")'
-    ws["I5"] = '=IFERROR(FILTER(Materials!P5:P200,(Materials!P5:P200="Required")+(Materials!P5:P200="Quoted")+(Materials!P5:P200="Approved")),"")'
-    ws["J5"] = '=IFERROR(FILTER(Materials!B5:B200,(Materials!P5:P200="Required")+(Materials!P5:P200="Quoted")+(Materials!P5:P200="Approved")),"")'
-    for c in range(1, 11):
-        ws.cell(5, c).fill = fill(INPUT_BG)
-        ws.cell(5, c).font = font(10)
-    input_note(ws, 32, 1, "Excel 365 and Google Sheets will spill the shopping list from row 5. If you are on Excel 2019 or earlier, filter the Materials sheet for Status = Required / Quoted / Approved and copy those rows here.", 10)
+        ws.cell(r, 6).number_format = CUR
+        ws.cell(r, 7).number_format = CUR
+    input_note(ws, 26, 1, "Rows pull from Materials where Shop Rank is 1, 2, 3... (status Required, Quoted, or Approved). Add materials on the Materials sheet; this list updates automatically.", 10)
     set_col_widths(ws, [14, 32, 12, 10, 8, 12, 12, 24, 12, 12])
     freeze(ws, "A5")
     return ws
@@ -1271,18 +1274,26 @@ def build_audit(wb):
 
 
 def build_calendar(wb):
-    return build_list_sheet(
+    rows = [r + [None] for r in D.CALENDAR]
+    ws, last = build_list_sheet(
         wb, "Calendar", PRIMARY_MID,
         "Visits, deliveries, inspections, reminders  ·  also subscribe via the Apps Script",
-        D.HEADERS["Calendar"], D.CALENDAR,
-        [12, 10, 22, 18, 48, 16, 12],
+        D.HEADERS["Calendar"], rows,
+        [12, 10, 22, 18, 48, 16, 12, 12],
         date_cols=[1],
         status_col=7,
         status_map={
             "Scheduled": SUCCESS, "To Do": INFO, "Due Soon": WARNING,
             "Watch": ACCENT, "Hold": DANGER, "Upcoming": TEXT_MUTED,
         },
+        last_col=8,
     )
+    for r in range(5, last + 1):
+        ws.cell(r, 8).value = f'=IF($A{r}>=AsOfDate,COUNTIF($A$5:$A{r},">="&AsOfDate),"")'
+        ws.cell(r, 8).fill = fill(FORMULA_BG)
+        ws.cell(r, 8).border = THIN
+        ws.cell(r, 8).font = font(10)
+    return ws, last
 
 
 # ===========================================================================
@@ -1306,7 +1317,7 @@ def build_dashboard(wb):
     # Progress bar (formula text)
     kpi_card(ws, 7, 1, "PROGRESS",
              '=IFERROR(INDEX(Projects!P:P,MATCH(ActiveProject,Projects!A:A,0)),0)',
-             '=REPT("█",ROUND(A8*20,0))&REPT("░",20-ROUND(A8*20,0))',
+             '=REPT("#",ROUND(A8*20,0))&REPT(".",20-ROUND(A8*20,0))',
              ACCENT, 3, 3)
     ws["A8"].number_format = PCT
     kpi_card(ws, 7, 5, "PHASE",
@@ -1340,13 +1351,13 @@ def build_dashboard(wb):
     # Attention / alerts
     section_label(ws, 15, 1, "ATTENTION", 6)
     attention = [
-        (16, '=IF((K8+A12)>H8,"⚠ Project is over the planned budget.","")'),
-        (17, '=IF(Finance!D10<H8*ContingencyFloor,"🔴 Contingency has fallen below 10%. Freeze non-critical extras.","")'),
-        (18, '=IF(COUNTIFS(Tasks!B:B,ActiveProject,Tasks!Q:Q,"Overdue")>0,"⚠ "&COUNTIFS(Tasks!B:B,ActiveProject,Tasks!Q:Q,"Overdue")&" overdue task(s).","")'),
-        (19, '=IF(COUNTIFS(Materials!B:B,ActiveProject,Materials!P:P,"Backordered")>0,"⚠ Material backorder: "&COUNTIFS(Materials!B:B,ActiveProject,Materials!P:P,"Backordered")&" line(s).","")'),
-        (20, '=IF(COUNTIFS(Documents!B:B,ActiveProject,Documents!N:N,"Expiring")+COUNTIFS(Documents!B:B,ActiveProject,Documents!N:N,"Expired")>0,"⚠ Document expiry needs attention.","")'),
-        (21, '=IF(COUNTIFS(\'Change Orders\'!B:B,ActiveProject,\'Change Orders\'!I:I,"Submitted")>0,"⚠ Change order awaiting approval.","")'),
-        (22, '=IF(COUNTA(A16:A21)=0,"🟢 Nothing urgent. You\'re clear for the week.","")'),
+        (16, '=IF((K8+A12)>H8,"ALERT: Project is over the planned budget.","")'),
+        (17, '=IF(Finance!D10<H8*ContingencyFloor,"ALERT: Contingency has fallen below 10%. Freeze non-critical extras.","")'),
+        (18, '=IF(COUNTIFS(Tasks!B:B,ActiveProject,Tasks!Q:Q,"Overdue")>0,"ALERT: "&COUNTIFS(Tasks!B:B,ActiveProject,Tasks!Q:Q,"Overdue")&" overdue task(s).","")'),
+        (19, '=IF(COUNTIFS(Materials!B:B,ActiveProject,Materials!P:P,"Backordered")>0,"ALERT: Material backorder: "&COUNTIFS(Materials!B:B,ActiveProject,Materials!P:P,"Backordered")&" line(s).","")'),
+        (20, '=IF(COUNTIFS(Documents!B:B,ActiveProject,Documents!N:N,"Expiring")+COUNTIFS(Documents!B:B,ActiveProject,Documents!N:N,"Expired")>0,"ALERT: Document expiry needs attention.","")'),
+        (21, '=IF(COUNTIFS(\'Change Orders\'!B:B,ActiveProject,\'Change Orders\'!I:I,"Submitted")>0,"ALERT: Change order awaiting approval.","")'),
+        (22, '=IF(COUNTIF(A16:A21,"ALERT*")=0,"OK: Nothing urgent. You are clear for the week.","")'),
     ]
     for r, fml in attention:
         ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=6)
@@ -1365,18 +1376,20 @@ def build_dashboard(wb):
         cell.fill = fill(PRIMARY)
         cell.alignment = align("center", "center")
         cell.border = THIN
-    # Pull 6 soonest open tasks with FILTER (Excel 365 / Sheets)
-    # Fallback: list known upcoming from Tasks via INDEX on deadline
-    # We'll place FILTER spilled formulas
-    ws["H17"] = '=IFERROR(FILTER(Tasks!K5:K200,(Tasks!B5:B200=ActiveProject)*(Tasks!H5:H200<>"Completed")),"")'
-    ws["I17"] = '=IFERROR(FILTER(Tasks!D5:D200,(Tasks!B5:B200=ActiveProject)*(Tasks!H5:H200<>"Completed")),"")'
-    ws["J17"] = '=IFERROR(FILTER(Tasks!C5:C200,(Tasks!B5:B200=ActiveProject)*(Tasks!H5:H200<>"Completed")),"")'
-    ws["K17"] = '=IFERROR(FILTER(Tasks!F5:F200,(Tasks!B5:B200=ActiveProject)*(Tasks!H5:H200<>"Completed")),"")'
-    ws["L17"] = '=IFERROR(FILTER(Tasks!H5:H200,(Tasks!B5:B200=ActiveProject)*(Tasks!H5:H200<>"Completed")),"")'
-    ws["H17"].number_format = DATE
-    for c in range(8, 13):
-        ws.cell(17, c).fill = fill(WHITE)
-        ws.cell(17, c).font = font(9)
+    # Five ranked open tasks via INDEX/MATCH on Tasks Dash Rank (no FILTER / no spill).
+    for i in range(5):
+        r = 17 + i
+        n = i + 1
+        ws.cell(r, 8).value = f'=IFERROR(INDEX(Tasks!K:K,MATCH({n},Tasks!R:R,0)),"")'
+        ws.cell(r, 8).number_format = DATE
+        ws.cell(r, 9).value = f'=IFERROR(INDEX(Tasks!D:D,MATCH({n},Tasks!R:R,0)),"")'
+        ws.cell(r, 10).value = f'=IFERROR(INDEX(Tasks!C:C,MATCH({n},Tasks!R:R,0)),"")'
+        ws.cell(r, 11).value = f'=IFERROR(INDEX(Tasks!F:F,MATCH({n},Tasks!R:R,0)),"")'
+        ws.cell(r, 12).value = f'=IFERROR(INDEX(Tasks!H:H,MATCH({n},Tasks!R:R,0)),"")'
+        for c in range(8, 13):
+            ws.cell(r, c).fill = fill(WHITE if i % 2 == 0 else ROW_ALT)
+            ws.cell(r, c).font = font(9)
+            ws.cell(r, c).border = THIN
 
     # Recent expenses
     section_label(ws, 24, 1, "RECENT EXPENSES", 6)
@@ -1386,14 +1399,20 @@ def build_dashboard(wb):
         cell.font = font(9, True, WHITE)
         cell.fill = fill(PRIMARY)
         cell.border = THIN
-    # last 8 expenses for active project via FILTER
-    ws["A26"] = '=IFERROR(FILTER(Expenses!B5:B200,Expenses!C5:C200=ActiveProject),"")'
-    ws["B26"] = '=IFERROR(FILTER(Expenses!F5:F200,Expenses!C5:C200=ActiveProject),"")'
-    ws["C26"] = '=IFERROR(FILTER(Expenses!G5:G200,Expenses!C5:C200=ActiveProject),"")'
-    ws["D26"] = '=IFERROR(FILTER(Expenses!H5:H200,Expenses!C5:C200=ActiveProject),"")'
-    ws["E26"] = '=IFERROR(FILTER(Expenses!J5:J200,Expenses!C5:C200=ActiveProject),"")'
-    ws["A26"].number_format = DATE
-    ws["D26"].number_format = CUR
+    for i in range(6):
+        r = 26 + i
+        n = i + 1
+        ws.cell(r, 1).value = f'=IFERROR(INDEX(Expenses!B:B,MATCH({n},Expenses!M:M,0)),"")'
+        ws.cell(r, 1).number_format = DATE
+        ws.cell(r, 2).value = f'=IFERROR(INDEX(Expenses!F:F,MATCH({n},Expenses!M:M,0)),"")'
+        ws.cell(r, 3).value = f'=IFERROR(INDEX(Expenses!G:G,MATCH({n},Expenses!M:M,0)),"")'
+        ws.cell(r, 4).value = f'=IFERROR(INDEX(Expenses!H:H,MATCH({n},Expenses!M:M,0)),"")'
+        ws.cell(r, 4).number_format = CUR
+        ws.cell(r, 5).value = f'=IFERROR(INDEX(Expenses!J:J,MATCH({n},Expenses!M:M,0)),"")'
+        for c in range(1, 6):
+            ws.cell(r, c).fill = fill(WHITE if i % 2 == 0 else ROW_ALT)
+            ws.cell(r, c).font = font(9)
+            ws.cell(r, c).border = THIN
 
     # Room snapshot
     section_label(ws, 24, 8, "ROOMS", 6)
@@ -1427,11 +1446,18 @@ def build_dashboard(wb):
         cell.font = font(9, True, WHITE)
         cell.fill = fill(PRIMARY)
         cell.border = THIN
-    ws["A38"] = '=IFERROR(FILTER(Calendar!A5:A80,Calendar!A5:A80>=AsOfDate),"")'
-    ws["B38"] = '=IFERROR(FILTER(Calendar!C5:C80,Calendar!A5:A80>=AsOfDate),"")'
-    ws["C38"] = '=IFERROR(FILTER(Calendar!F5:F80,Calendar!A5:A80>=AsOfDate),"")'
-    ws["D38"] = '=IFERROR(FILTER(Calendar!G5:G80,Calendar!A5:A80>=AsOfDate),"")'
-    ws["A38"].number_format = DATE
+    for i in range(5):
+        r = 38 + i
+        n = i + 1
+        ws.cell(r, 1).value = f'=IFERROR(INDEX(Calendar!A:A,MATCH({n},Calendar!H:H,0)),"")'
+        ws.cell(r, 1).number_format = DATE
+        ws.cell(r, 2).value = f'=IFERROR(INDEX(Calendar!C:C,MATCH({n},Calendar!H:H,0)),"")'
+        ws.cell(r, 3).value = f'=IFERROR(INDEX(Calendar!F:F,MATCH({n},Calendar!H:H,0)),"")'
+        ws.cell(r, 4).value = f'=IFERROR(INDEX(Calendar!G:G,MATCH({n},Calendar!H:H,0)),"")'
+        for c in range(1, 5):
+            ws.cell(r, c).fill = fill(WHITE if i % 2 == 0 else ROW_ALT)
+            ws.cell(r, c).font = font(9)
+            ws.cell(r, c).border = THIN
 
     # Quick actions (as labeled cells — operational in Apps Script)
     section_label(ws, 36, 8, "QUICK ACTIONS  (use the Novality Store menu in Google Sheets)", 6)
@@ -1455,17 +1481,14 @@ def build_dashboard(wb):
     section_label(ws, 45, 1, "AI INSIGHT", 12)
     ws.merge_cells("A46:L48")
     ws["A46"] = (
-        '=IFERROR(INDEX(\'AI Insights\'!G:G,MATCH(1,(\'AI Insights\'!C:C=ActiveProject)*'
-        '((\'AI Insights\'!J:J="New")+(\'AI Insights\'!J:J="In Progress")),0)),'
-        '"No open AI insights.")'
+        '=IFERROR(INDEX(\'AI Insights\'!G:G,MATCH(1,\'AI Insights\'!L:L,0)),"No open AI insights.")'
     )
     ws["A46"].alignment = align("left", "center", True)
     ws["A46"].font = font(11, False, TEXT)
     ws["A46"].fill = fill(WHITE)
     ws.merge_cells("A49:L50")
     ws["A49"] = (
-        '=IFERROR("Recommendation: "&INDEX(\'AI Insights\'!H:H,MATCH(1,(\'AI Insights\'!C:C=ActiveProject)*'
-        '((\'AI Insights\'!J:J="New")+(\'AI Insights\'!J:J="In Progress")),0)),"")'
+        '=IFERROR("Recommendation: "&INDEX(\'AI Insights\'!H:H,MATCH(1,\'AI Insights\'!L:L,0)),"")'
     )
     ws["A49"].alignment = align("left", "center", True)
     ws["A49"].font = font(10, True, ACCENT)
@@ -1559,10 +1582,17 @@ def build_admin(wb):
         cell.font = font(9, True, WHITE)
         cell.fill = fill(PRIMARY)
         cell.border = THIN
-    ws["A25"] = "=Suppliers!B5:B20"
-    ws["B25"] = "=Suppliers!C5:C20"
-    ws["C25"] = "=Suppliers!H5:H20"
-    ws["D25"] = "=Suppliers!J5:J20"
+    for i in range(len(D.SUPPLIERS)):
+        r = 25 + i
+        src_row = 5 + i
+        ws.cell(r, 1).value = f'=IFERROR(INDEX(Suppliers!B:B,{src_row}),"")'
+        ws.cell(r, 2).value = f'=IFERROR(INDEX(Suppliers!C:C,{src_row}),"")'
+        ws.cell(r, 3).value = f'=IFERROR(INDEX(Suppliers!H:H,{src_row}),"")'
+        ws.cell(r, 4).value = f'=IFERROR(INDEX(Suppliers!J:J,{src_row}),"")'
+        for c in range(1, 5):
+            ws.cell(r, c).fill = fill(WHITE if i % 2 == 0 else ROW_ALT)
+            ws.cell(r, c).border = THIN
+            ws.cell(r, c).font = font(10)
 
     set_col_widths(ws, [28, 16, 14, 16, 14, 14, 12, 12, 12, 14, 12, 12])
     return ws

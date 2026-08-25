@@ -841,7 +841,7 @@ HEADERS = {
     ],
     "AI Insights": [
         "Insight ID", "Date", "Project ID", "Room ID", "Category", "Severity",
-        "Insight", "Recommendation", "Est. Impact $", "Status", "Action Taken",
+        "Insight", "Recommendation", "Est. Impact $", "Status", "Action Taken", "Open Flag",
     ],
     "Budget": [
         "Line ID", "Project ID", "Room ID", "Category", "Subcategory", "Planned",
@@ -849,7 +849,7 @@ HEADERS = {
     ],
     "Expenses": [
         "Expense ID", "Date", "Project ID", "Room ID", "Category", "Vendor",
-        "Description", "Amount", "Method", "Status", "Receipt / Invoice", "Approved By",
+        "Description", "Amount", "Method", "Status", "Receipt / Invoice", "Approved By", "Dash Rank",
     ],
     "Contractors": [
         "Contractor ID", "Company", "Contact", "Trade", "Skills", "Phone", "Email",
@@ -867,7 +867,7 @@ HEADERS = {
     "Tasks": [
         "Task ID", "Project ID", "Room ID", "Title", "Description", "Assignee",
         "Role", "Status", "Priority", "Start", "Deadline", "Cost", "Depends On",
-        "% Complete", "Attachments / Comments", "Days Left", "Health",
+        "% Complete", "Attachments / Comments", "Days Left", "Health", "Dash Rank",
     ],
     "Timeline": [
         "Phase ID", "Project ID", "Phase", "Start", "End", "Duration (days)",
@@ -877,7 +877,7 @@ HEADERS = {
         "Material ID", "Project ID", "Room ID", "Product", "Brand", "SKU",
         "Category", "Qty Required", "Unit", "Unit Price", "Line Total", "Supplier",
         "Qty Ordered", "Qty Delivered", "Qty Installed", "Status", "Warranty (mo)",
-        "Receipt", "Order Date", "Delivery Date", "QR / Barcode", "Open Qty",
+        "Receipt", "Order Date", "Delivery Date", "QR / Barcode", "Open Qty", "Shop Rank",
     ],
     "Suppliers": [
         "Supplier ID", "Name", "Category", "Contact", "Phone", "Email", "Website",

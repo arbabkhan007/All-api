@@ -1,6 +1,6 @@
 # Integrity report
 
-File: `Novality_Store_Home_Renovation_System.xlsx` (278,137 bytes)
+File: `Novality_Store_Home_Renovation_System.xlsx` (281,921 bytes)
 
 ## Result: **PASS**
 
@@ -10,7 +10,7 @@ File: `Novality_Store_Home_Renovation_System.xlsx` (278,137 bytes)
 - Last modified by = premium
 - 37 named ranges present
 - All 35 sheets have sheet protection enabled
-- 1291 sampled formula cells are locked
+- 1687 sampled formula cells are locked
 - Key live formulas still present
 - Sample story (PRJ-001 / Maplewood) intact
 
