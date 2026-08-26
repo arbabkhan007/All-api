@@ -1,6 +1,7 @@
 # Novality Store — Listing kit (1448 × 1086)
 
 Every image in `images/` is **exactly 1448 × 1086 pixels** (landscape, ~4:3).
+Etsy-ready JPEGs are in `images_jpg/` (same pixels, smaller files). The pack zip ships the JPEGs.
 
 Author: **Novality store**  
 Unprotect password: **premium**

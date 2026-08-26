@@ -2,3 +2,6 @@ Hearth_and_Timber_*.xlsx
 __pycache__/
 *.pyc
 .venv/
+downloads/*.xlsx
+downloads/*.zip
+downloads/SOURCE_CODE.txt
