@@ -164,13 +164,17 @@ LOOKUPS = {
     "Property_Type": ["Single Family", "Townhouse", "Condo", "Multi-Family", "Cabin", "Commercial"],
 }
 
+from .extra_data import LOOKUPS_EXTRA  # noqa: E402
+
+LOOKUPS.update(LOOKUPS_EXTRA)
+
 # ---------------------------------------------------------------------------
 # Settings / company
 # ---------------------------------------------------------------------------
 SETTINGS = [
     ("Company Name", "Novality Store"),
     ("Product Name", "Home Renovation Management System"),
-    ("Version", "1.0.0"),
+    ("Version", "2.0.0"),
     ("Homeowner", "Alex Rivera"),
     ("Active Project ID", "PRJ-001"),
     ("Active Property ID", "PROP-001"),

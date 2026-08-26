@@ -26,6 +26,7 @@ function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('Novality Store')
     .addItem('Open homeowner dashboard', 'goDashboard')
+    .addItem('Open module hub', 'goModuleHub')
     .addSeparator()
     .addItem('Add expense…', 'addExpense')
     .addItem('Add task…', 'addTask')

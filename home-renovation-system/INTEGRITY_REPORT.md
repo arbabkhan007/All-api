@@ -1,18 +1,19 @@
 # Integrity report
 
-File: `Novality_Store_Home_Renovation_System.xlsx` (281,921 bytes)
+File: `Novality_Store_Home_Renovation_System.xlsx` (530,303 bytes)
 
 ## Result: **PASS**
 
 ### Checks passed
-- 35 sheets in expected order
-- Author / creator = premium
-- Last modified by = premium
-- 37 named ranges present
-- All 35 sheets have sheet protection enabled
-- 1687 sampled formula cells are locked
+- 70 sheets in expected order
+- Author / creator = Novality store
+- Last modified by = Novality store
+- 62 named ranges present
+- All 70 sheets have sheet protection enabled
+- 3019 sampled formula cells are locked
+- No FILTER / SMALL(IF) formulas in sampled cells
 - Key live formulas still present
-- Sample story (PRJ-001 / Maplewood) intact
+- Sample story (PRJ-001 / Maplewood / CL-001) intact
 
 ### Failures
 - None
@@ -20,7 +21,7 @@ File: `Novality_Store_Home_Renovation_System.xlsx` (281,921 bytes)
 ### Protection
 
 - Sheet password: `premium`
-- Author: `premium`
+- Author: `Novality store`
 - Formula / header / dashboard cells: locked
 - Ivory input cells on registers + Settings column B + Lookups: unlocked
 - Unprotect path: Review → Unprotect Sheet → `premium`

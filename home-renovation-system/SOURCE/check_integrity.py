@@ -10,17 +10,15 @@ from openpyxl import load_workbook
 from openpyxl.cell.cell import MergedCell
 
 ROOT = Path(__file__).resolve().parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from hrms.modules import SHEET_ORDER  # noqa: E402
+
 XLSX = ROOT / "Novality_Store_Home_Renovation_System.xlsx"
 
-EXPECTED_SHEETS = [
-    "Start Here", "Dashboard", "Projects", "Rooms", "Design Studio", "AI Insights",
-    "Budget", "Expenses", "Finance", "Contractors", "Quotes", "Jobs",
-    "Tasks", "Timeline", "Materials", "Shopping List", "Suppliers",
-    "Documents", "Messages", "Inventory", "Maintenance",
-    "Inspections", "Payments", "Change Orders", "Permits", "Warranties",
-    "Calendar", "Notifications", "Users", "Properties", "Roles & Permissions",
-    "Admin", "Settings", "Lookups", "Audit Log",
-]
+EXPECTED_SHEETS = SHEET_ORDER
+AUTHOR = "Novality store"
 
 REQUIRED_NAMES = {
     "ActiveProject", "HomeownerName", "AsOfDate", "ContingencyPct",
@@ -36,6 +34,11 @@ KEY_FORMULAS = {
     ("Tasks", "Q5"): "Overdue",
     ("Materials", "K5"): "$H5*$J5",
     ("Dashboard", "D12"): "H8-K8-A12",
+    ("Module Hub", "A4"): "MODULE QUICK LINKS",
+    ("Project Phases", "F5"): "$E5-$D5",
+    ("Labor Cost Calc", "O5"): "$L5+$M5+$N5",
+    ("Invoice Management", "H5"): "$F5+$G5",
+    ("Profit Loss Project", "H5"): "$C5-$G5",
 }
 
 
@@ -48,20 +51,25 @@ def main() -> int:
     notes = []
 
     if list(wb.sheetnames) != EXPECTED_SHEETS:
-        fails.append(f"Sheet order/count mismatch: {wb.sheetnames}")
+        extra = [s for s in wb.sheetnames if s not in EXPECTED_SHEETS]
+        missing = [s for s in EXPECTED_SHEETS if s not in wb.sheetnames]
+        fails.append(
+            f"Sheet order/count mismatch ({len(wb.sheetnames)} vs {len(EXPECTED_SHEETS)}). "
+            f"Missing={missing[:8]} Extra={extra[:8]}"
+        )
     else:
-        notes.append(f"35 sheets in expected order")
+        notes.append(f"{len(EXPECTED_SHEETS)} sheets in expected order")
 
     creator = wb.properties.creator
     modified = wb.properties.lastModifiedBy
-    if creator != "premium":
-        fails.append(f"creator is {creator!r}, expected 'premium'")
+    if creator != AUTHOR:
+        fails.append(f"creator is {creator!r}, expected {AUTHOR!r}")
     else:
-        notes.append("Author / creator = premium")
-    if modified != "premium":
-        fails.append(f"lastModifiedBy is {modified!r}, expected 'premium'")
+        notes.append(f"Author / creator = {AUTHOR}")
+    if modified != AUTHOR:
+        fails.append(f"lastModifiedBy is {modified!r}, expected {AUTHOR!r}")
     else:
-        notes.append("Last modified by = premium")
+        notes.append(f"Last modified by = {AUTHOR}")
 
     names = set(wb.defined_names.keys())
     missing = REQUIRED_NAMES - names
@@ -74,6 +82,7 @@ def main() -> int:
     formula_unlocked = []
     formula_count = 0
     locked_formulas = 0
+    banned = []
     for ws in wb.worksheets:
         if not ws.protection.sheet:
             unprotected.append(ws.title)
@@ -84,6 +93,9 @@ def main() -> int:
                     continue
                 if isinstance(cell.value, str) and cell.value.startswith("="):
                     formula_count += 1
+                    val = cell.value.upper()
+                    if "FILTER(" in val or "SMALL(IF" in val:
+                        banned.append(f"{ws.title}!{cell.coordinate}")
                     if not cell.protection.locked:
                         formula_unlocked.append(f"{ws.title}!{cell.coordinate}")
                     else:
@@ -92,12 +104,17 @@ def main() -> int:
     if unprotected:
         fails.append(f"Sheets not protected: {unprotected}")
     else:
-        notes.append("All 35 sheets have sheet protection enabled")
+        notes.append(f"All {len(wb.sheetnames)} sheets have sheet protection enabled")
 
     if formula_unlocked:
         fails.append(f"{len(formula_unlocked)} formula cells left unlocked (first 8): {formula_unlocked[:8]}")
     else:
         notes.append(f"{locked_formulas} sampled formula cells are locked")
+
+    if banned:
+        fails.append(f"Banned FILTER/SMALL-IF formulas: {banned[:6]}")
+    else:
+        notes.append("No FILTER / SMALL(IF) formulas in sampled cells")
 
     for (sheet, addr), needle in KEY_FORMULAS.items():
         val = str(wb[sheet][addr].value or "")
@@ -105,14 +122,15 @@ def main() -> int:
             fails.append(f"{sheet}!{addr} missing {needle!r}: {val[:80]!r}")
     notes.append("Key live formulas still present")
 
-    # Sample data still there
     if wb["Projects"]["A5"].value != "PRJ-001":
         fails.append("Sample project PRJ-001 missing")
     if wb["Materials"]["P5"].value != "Delivered":
         fails.append(f"Materials status misaligned: {wb['Materials']['P5'].value!r}")
     if wb["Settings"]["B5"].value != "Novality Store":
         fails.append("Settings company name changed")
-    notes.append("Sample story (PRJ-001 / Maplewood) intact")
+    if wb["Client Master Data"]["A5"].value != "CL-001":
+        fails.append("Client master sample missing")
+    notes.append("Sample story (PRJ-001 / Maplewood / CL-001) intact")
 
     report = ROOT / "INTEGRITY_REPORT.md"
     lines = [
@@ -137,7 +155,7 @@ def main() -> int:
         "### Protection",
         "",
         "- Sheet password: `premium`",
-        "- Author: `premium`",
+        f"- Author: `{AUTHOR}`",
         "- Formula / header / dashboard cells: locked",
         "- Ivory input cells on registers + Settings column B + Lookups: unlocked",
         "- Unprotect path: Review → Unprotect Sheet → `premium`",

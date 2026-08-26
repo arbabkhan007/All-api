@@ -1,6 +1,6 @@
 # Etsy listing kit — Novality Store Home Renovation System
 
-Author: **premium**  
+Author: **Novality store**  
 Unprotect password (formulas): **premium**  
 Digital download. Instant. No physical item.
 
@@ -18,7 +18,7 @@ Home Renovation Spreadsheet Excel Google Sheets Budget Planner Contractor Tracke
 
 1. Home Renovation Planner Spreadsheet — Budget, Contractors, Tasks, Gantt — Excel & Google Sheets
 2. House Remodel Tracker Excel Template | Kitchen Bath Budget | Contractor Score | Instant Download
-3. Digital Twin Home Renovation System — 35 Tab Spreadsheet for Excel and Google Sheets
+3. Digital Twin Home Renovation System — 70 Tab Spreadsheet for Excel and Google Sheets
 4. Premium Home Remodel Planner | Budget vs Actual | Materials Procurement | Maintenance Hub
 
 ## Subtitle / short tagline
@@ -88,7 +88,7 @@ Designed like an interior studio — deep forest green, warm sand, terracotta �
 WHAT YOU GET (instant download)
 ━━━━━━━━━━━━━━━━━━━━
 
-• 35-sheet Excel workbook (.xlsx) that opens in Google Sheets
+• 70-sheet Excel workbook (.xlsx) that opens in Google Sheets
 • Live formulas: budget, spent, committed, remaining, variance, contractor score
 • Weekly Gantt, kanban tasks, procurement pipeline, shopping list
 • Design studio + AI insight register
@@ -98,7 +98,7 @@ WHAT YOU GET (instant download)
 • Sample project already loaded (Maplewood whole-home refresh)
 • Google Apps Script menu (add expense / task, email reminders)
 • Formula cells locked so nobody overwrites the math
-• Author: premium  ·  Unprotect password: premium
+• Author: Novality store  ·  Unprotect password: premium
 
 ━━━━━━━━━━━━━━━━━━━━
 SHEETS (35)
@@ -199,7 +199,7 @@ Description: `35-tab Home Renovation System for Excel + Google Sheets. Budget, c
 Thank you for buying Novality Store.
 
 Unprotect password for formula cells: premium
-Author stamped on the file: premium
+Author stamped on the file: Novality store
 
 Start on the Start Here tab, then Dashboard.
 If you leave a review, tell me which room you are renovating — I read every one.

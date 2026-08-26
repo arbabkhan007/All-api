@@ -1,14 +1,4 @@
-================================================================================
-NOVALITY STORE — COMPLETE SOURCE CODE
-Author: premium
-Unprotect password: premium
-================================================================================
-
-
-################################################################################
-# FILE: generate_workbook.py
-################################################################################
-
+===== generate_workbook.py =====
 #!/usr/bin/env python3
 """Generate the Novality Store Home Renovation Management System workbook.
 
@@ -55,185 +45,12 @@ def main() -> int:
 if __name__ == "__main__":
     raise SystemExit(main())
 
-
-################################################################################
-# FILE: check_integrity.py
-################################################################################
-
-#!/usr/bin/env python3
-"""Integrity check for the protected Novality Store workbook."""
-
-from __future__ import annotations
-
-import sys
-from pathlib import Path
-
-from openpyxl import load_workbook
-from openpyxl.cell.cell import MergedCell
-
-ROOT = Path(__file__).resolve().parent
-XLSX = ROOT / "Novality_Store_Home_Renovation_System.xlsx"
-
-EXPECTED_SHEETS = [
-    "Start Here", "Dashboard", "Projects", "Rooms", "Design Studio", "AI Insights",
-    "Budget", "Expenses", "Finance", "Contractors", "Quotes", "Jobs",
-    "Tasks", "Timeline", "Materials", "Shopping List", "Suppliers",
-    "Documents", "Messages", "Inventory", "Maintenance",
-    "Inspections", "Payments", "Change Orders", "Permits", "Warranties",
-    "Calendar", "Notifications", "Users", "Properties", "Roles & Permissions",
-    "Admin", "Settings", "Lookups", "Audit Log",
-]
-
-REQUIRED_NAMES = {
-    "ActiveProject", "HomeownerName", "AsOfDate", "ContingencyPct",
-    "ContingencyFloor", "OverrunAlert", "CompanyName", "TaxRate",
-}
-
-KEY_FORMULAS = {
-    ("Projects", "R5"): "SUMIFS",
-    ("Rooms", "Q5"): "ROUND",
-    ("Budget", "G5"): "SUMIFS",
-    ("Finance", "A6"): "SUMIF",
-    ("Contractors", "M5"): "AVERAGE",
-    ("Tasks", "Q5"): "Overdue",
-    ("Materials", "K5"): "$H5*$J5",
-    ("Dashboard", "D12"): "H8-K8-A12",
-}
-
-
-def main() -> int:
-    if not XLSX.exists():
-        print("MISSING", XLSX)
-        return 2
-    wb = load_workbook(XLSX, data_only=False)
-    fails = []
-    notes = []
-
-    if list(wb.sheetnames) != EXPECTED_SHEETS:
-        fails.append(f"Sheet order/count mismatch: {wb.sheetnames}")
-    else:
-        notes.append(f"35 sheets in expected order")
-
-    creator = wb.properties.creator
-    modified = wb.properties.lastModifiedBy
-    if creator != "premium":
-        fails.append(f"creator is {creator!r}, expected 'premium'")
-    else:
-        notes.append("Author / creator = premium")
-    if modified != "premium":
-        fails.append(f"lastModifiedBy is {modified!r}, expected 'premium'")
-    else:
-        notes.append("Last modified by = premium")
-
-    names = set(wb.defined_names.keys())
-    missing = REQUIRED_NAMES - names
-    if missing:
-        fails.append(f"Missing named ranges: {sorted(missing)}")
-    else:
-        notes.append(f"{len(names)} named ranges present")
-
-    unprotected = []
-    formula_unlocked = []
-    formula_count = 0
-    locked_formulas = 0
-    for ws in wb.worksheets:
-        if not ws.protection.sheet:
-            unprotected.append(ws.title)
-        for row in ws.iter_rows(min_row=1, max_row=min(ws.max_row or 1, 80),
-                                min_col=1, max_col=min(ws.max_column or 1, 40)):
-            for cell in row:
-                if isinstance(cell, MergedCell):
-                    continue
-                if isinstance(cell.value, str) and cell.value.startswith("="):
-                    formula_count += 1
-                    if not cell.protection.locked:
-                        formula_unlocked.append(f"{ws.title}!{cell.coordinate}")
-                    else:
-                        locked_formulas += 1
-
-    if unprotected:
-        fails.append(f"Sheets not protected: {unprotected}")
-    else:
-        notes.append("All 35 sheets have sheet protection enabled")
-
-    if formula_unlocked:
-        fails.append(f"{len(formula_unlocked)} formula cells left unlocked (first 8): {formula_unlocked[:8]}")
-    else:
-        notes.append(f"{locked_formulas} sampled formula cells are locked")
-
-    for (sheet, addr), needle in KEY_FORMULAS.items():
-        val = str(wb[sheet][addr].value or "")
-        if needle not in val:
-            fails.append(f"{sheet}!{addr} missing {needle!r}: {val[:80]!r}")
-    notes.append("Key live formulas still present")
-
-    # Sample data still there
-    if wb["Projects"]["A5"].value != "PRJ-001":
-        fails.append("Sample project PRJ-001 missing")
-    if wb["Materials"]["P5"].value != "Delivered":
-        fails.append(f"Materials status misaligned: {wb['Materials']['P5'].value!r}")
-    if wb["Settings"]["B5"].value != "Novality Store":
-        fails.append("Settings company name changed")
-    notes.append("Sample story (PRJ-001 / Maplewood) intact")
-
-    report = ROOT / "INTEGRITY_REPORT.md"
-    lines = [
-        "# Integrity report",
-        "",
-        f"File: `{XLSX.name}` ({XLSX.stat().st_size:,} bytes)",
-        "",
-        "## Result: **" + ("PASS" if not fails else "FAIL") + "**",
-        "",
-        "### Checks passed",
-    ]
-    for n in notes:
-        lines.append(f"- {n}")
-    lines += ["", "### Failures"]
-    if fails:
-        for f in fails:
-            lines.append(f"- {f}")
-    else:
-        lines.append("- None")
-    lines += [
-        "",
-        "### Protection",
-        "",
-        "- Sheet password: `premium`",
-        "- Author: `premium`",
-        "- Formula / header / dashboard cells: locked",
-        "- Ivory input cells on registers + Settings column B + Lookups: unlocked",
-        "- Unprotect path: Review → Unprotect Sheet → `premium`",
-        "",
-    ]
-    report.write_text("\n".join(lines), encoding="utf-8")
-    print(report.read_text(encoding="utf-8"))
-    return 1 if fails else 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
-
-
-################################################################################
-# FILE: requirements.txt
-################################################################################
-
-openpyxl>=3.1.5
-
-
-################################################################################
-# FILE: hrms/__init__.py
-################################################################################
-
+===== hrms/__init__.py =====
 """Home Renovation Management System workbook package."""
 
-__version__ = "1.0.0"
+__version__ = "2.0.0"
 
-
-################################################################################
-# FILE: hrms/styles.py
-################################################################################
-
+===== hrms/styles.py =====
 """Brand styles for the Home Renovation Management System workbook.
 
 Visual direction: premium interior-design studio, not generic construction software.
@@ -569,11 +386,158 @@ STATUS_COLORS = {
 def status_fill(status: str) -> str:
     return STATUS_COLORS.get(status, PRIMARY_SOFT)
 
+===== hrms/protect.py =====
+"""Lock formula cells and protect every sheet with password 'premium'.
 
-################################################################################
-# FILE: hrms/data.py
-################################################################################
+Input / data-entry cells stay unlocked so buyers can run the system.
+Formula, header, banner, KPI and dashboard cells cannot be typed over
+without Review → Unprotect Sheet → premium.
+"""
 
+from __future__ import annotations
+
+from openpyxl.cell.cell import MergedCell
+from openpyxl.styles import Protection
+from openpyxl.utils import get_column_letter
+from openpyxl.workbook.protection import WorkbookProtection
+
+SHEET_PASSWORD = "premium"
+AUTHOR = "Novality store"
+
+LOCKED = Protection(locked=True)
+UNLOCKED = Protection(locked=False)
+
+# Entirely calculated / branded surfaces — no casual typing
+LOCK_ALL = {
+    "Start Here",
+    "Module Hub",
+    "Dashboard",
+    "Finance",
+    "Admin",
+    "Shopping List",
+    "Roles & Permissions",
+    "Gantt Chart",
+    "Contractor Performance",
+    "Room Cost Summary",
+    "Profit Loss Project",
+    "Cash Flow Tracker",
+    "Project Status Report",
+    "Weekly Progress Report",
+    "KPI Dashboard",
+}
+
+# Extra empty rows unlocked for new records (input columns only)
+INPUT_PAD_TO = 200
+
+
+def _is_formula(val) -> bool:
+    return isinstance(val, str) and val.startswith("=")
+
+
+def apply_cell_locks(ws) -> dict:
+    """Lock formulas/headers; unlock data-entry cells. Returns a small report."""
+    name = ws.title
+    max_row = ws.max_row or 1
+    max_col = ws.max_column or 1
+    locked = unlocked = 0
+
+    formula_cols = set()
+    for row in ws.iter_rows(min_row=5, max_row=max_row, min_col=1, max_col=max_col):
+        for cell in row:
+            if isinstance(cell, MergedCell):
+                continue
+            if _is_formula(cell.value):
+                formula_cols.add(cell.column)
+
+    def set_lock(cell, lock: bool):
+        nonlocal locked, unlocked
+        if isinstance(cell, MergedCell):
+            return
+        cell.protection = LOCKED if lock else UNLOCKED
+        if lock:
+            locked += 1
+        else:
+            unlocked += 1
+
+    # Rows 1–4 always locked (banner + headers)
+    for r in range(1, 5):
+        for c in range(1, max_col + 1):
+            set_lock(ws.cell(r, c), True)
+
+    if name in LOCK_ALL:
+        for r in range(5, max_row + 1):
+            for c in range(1, max_col + 1):
+                set_lock(ws.cell(r, c), True)
+        return {"sheet": name, "locked": locked, "unlocked": unlocked, "mode": "lock-all"}
+
+    if name == "Settings":
+        # Column A (setting name) + C (notes) locked; B (value) unlocked
+        for r in range(5, max(max_row, 40) + 1):
+            set_lock(ws.cell(r, 1), True)
+            set_lock(ws.cell(r, 2), False)
+            set_lock(ws.cell(r, 3), True)
+        return {"sheet": name, "locked": locked, "unlocked": unlocked, "mode": "settings"}
+
+    if name == "Lookups":
+        for r in range(5, max(max_row, 80) + 1):
+            for c in range(1, max_col + 1):
+                set_lock(ws.cell(r, c), False)
+        return {"sheet": name, "locked": locked, "unlocked": unlocked, "mode": "lookups"}
+
+    # Registers: lock formula columns + any formula cell; unlock the rest
+    pad_to = max(max_row, INPUT_PAD_TO)
+    for r in range(5, pad_to + 1):
+        for c in range(1, max_col + 1):
+            cell = ws.cell(r, c)
+            lock = c in formula_cols or _is_formula(cell.value)
+            set_lock(cell, lock)
+
+    return {
+        "sheet": name,
+        "locked": locked,
+        "unlocked": unlocked,
+        "mode": "register",
+        "formula_cols": [get_column_letter(c) for c in sorted(formula_cols)],
+    }
+
+
+def protect_sheet(ws, password: str = SHEET_PASSWORD) -> None:
+    ws.protection.sheet = True
+    ws.protection.password = password
+    ws.protection.enable()
+    ws.protection.autoFilter = True
+    ws.protection.sort = True
+    ws.protection.insertRows = True
+    ws.protection.insertHyperlinks = True
+    ws.protection.deleteRows = False
+    ws.protection.insertColumns = False
+    ws.protection.deleteColumns = False
+    ws.protection.formatCells = False
+    ws.protection.formatColumns = True
+    ws.protection.formatRows = True
+    ws.protection.selectLockedCells = True
+    ws.protection.selectUnlockedCells = True
+    ws.protection.objects = False
+    ws.protection.scenarios = True
+    ws.protection.pivotTables = True
+
+
+def protect_workbook(wb, password: str = SHEET_PASSWORD) -> list:
+    """Lock formulas, protect every sheet, stamp author = Novality store."""
+    reports = []
+    for ws in wb.worksheets:
+        reports.append(apply_cell_locks(ws))
+        protect_sheet(ws, password)
+
+    # Do not lock workbook structure — buyers may still add a scratch sheet.
+    wb.security = WorkbookProtection(lockStructure=False, lockWindows=False)
+    wb.properties.creator = AUTHOR
+    wb.properties.lastModifiedBy = AUTHOR
+    wb.properties.keywords = "Novality store, home renovation, spreadsheet, google sheets"
+    wb.properties.category = "Spreadsheets"
+    return reports
+
+===== hrms/data.py =====
 """Sample data for the Novality Store Home Renovation Management System.
 
 Scenario: mid-project whole-home refresh on 24 Aug 2026.
@@ -740,13 +704,17 @@ LOOKUPS = {
     "Property_Type": ["Single Family", "Townhouse", "Condo", "Multi-Family", "Cabin", "Commercial"],
 }
 
+from .extra_data import LOOKUPS_EXTRA  # noqa: E402
+
+LOOKUPS.update(LOOKUPS_EXTRA)
+
 # ---------------------------------------------------------------------------
 # Settings / company
 # ---------------------------------------------------------------------------
 SETTINGS = [
     ("Company Name", "Novality Store"),
     ("Product Name", "Home Renovation Management System"),
-    ("Version", "1.0.0"),
+    ("Version", "2.0.0"),
     ("Homeowner", "Alex Rivera"),
     ("Active Project ID", "PRJ-001"),
     ("Active Property ID", "PROP-001"),
@@ -1417,7 +1385,7 @@ HEADERS = {
     ],
     "AI Insights": [
         "Insight ID", "Date", "Project ID", "Room ID", "Category", "Severity",
-        "Insight", "Recommendation", "Est. Impact $", "Status", "Action Taken",
+        "Insight", "Recommendation", "Est. Impact $", "Status", "Action Taken", "Open Flag",
     ],
     "Budget": [
         "Line ID", "Project ID", "Room ID", "Category", "Subcategory", "Planned",
@@ -1425,7 +1393,7 @@ HEADERS = {
     ],
     "Expenses": [
         "Expense ID", "Date", "Project ID", "Room ID", "Category", "Vendor",
-        "Description", "Amount", "Method", "Status", "Receipt / Invoice", "Approved By",
+        "Description", "Amount", "Method", "Status", "Receipt / Invoice", "Approved By", "Dash Rank",
     ],
     "Contractors": [
         "Contractor ID", "Company", "Contact", "Trade", "Skills", "Phone", "Email",
@@ -1443,7 +1411,7 @@ HEADERS = {
     "Tasks": [
         "Task ID", "Project ID", "Room ID", "Title", "Description", "Assignee",
         "Role", "Status", "Priority", "Start", "Deadline", "Cost", "Depends On",
-        "% Complete", "Attachments / Comments", "Days Left", "Health",
+        "% Complete", "Attachments / Comments", "Days Left", "Health", "Dash Rank",
     ],
     "Timeline": [
         "Phase ID", "Project ID", "Phase", "Start", "End", "Duration (days)",
@@ -1453,7 +1421,7 @@ HEADERS = {
         "Material ID", "Project ID", "Room ID", "Product", "Brand", "SKU",
         "Category", "Qty Required", "Unit", "Unit Price", "Line Total", "Supplier",
         "Qty Ordered", "Qty Delivered", "Qty Installed", "Status", "Warranty (mo)",
-        "Receipt", "Order Date", "Delivery Date", "QR / Barcode", "Open Qty",
+        "Receipt", "Order Date", "Delivery Date", "QR / Barcode", "Open Qty", "Shop Rank",
     ],
     "Suppliers": [
         "Supplier ID", "Name", "Category", "Contact", "Phone", "Email", "Website",
@@ -1509,157 +1477,1877 @@ HEADERS = {
     ],
 }
 
+===== hrms/extra_data.py =====
+"""Sample data for the contractor ERP modules added from the Module Quick Links.
 
-################################################################################
-# FILE: hrms/protect.py
-################################################################################
-
-"""Lock formula cells and protect every sheet with password 'premium'.
-
-Input / data-entry cells stay unlocked so buyers can run the system.
-Formula, header, banner, KPI and dashboard cells cannot be typed over
-without Review → Unprotect Sheet → premium.
+Keeps the Maplewood / Gorge sample story (as-of 24 Aug 2026).
 """
 
 from __future__ import annotations
 
-from openpyxl.cell.cell import MergedCell
-from openpyxl.styles import Protection
-from openpyxl.utils import get_column_letter
-from openpyxl.workbook.protection import WorkbookProtection
+from datetime import date
 
-SHEET_PASSWORD = "premium"
-AUTHOR = "premium"
+TODAY = date(2026, 8, 24)
 
-LOCKED = Protection(locked=True)
-UNLOCKED = Protection(locked=False)
-
-# Entirely calculated / branded surfaces — no casual typing
-LOCK_ALL = {
-    "Start Here",
-    "Dashboard",
-    "Finance",
-    "Admin",
-    "Shopping List",
-    "Roles & Permissions",
+LOOKUPS_EXTRA = {
+    "Client_Type": ["Homeowner", "Investor", "Commercial", "Repeat"],
+    "Client_Status": ["Lead", "Active", "On Hold", "Complete", "Inactive"],
+    "Comm_Type": ["Meeting", "Call", "Email", "Site Visit", "WhatsApp", "Letter"],
+    "Sat_Channel": ["Survey", "Walkthrough", "Review", "Referral"],
+    "PO_Status": ["Draft", "Sent", "Confirmed", "Partial", "Received", "Closed", "Cancelled"],
+    "Stock_Status": ["In Stock", "Low", "Out", "On Order", "Reserved"],
+    "Worker_Status": ["Active", "On Leave", "Terminated"],
+    "Attendance_Status": ["Present", "Absent", "Half Day", "Overtime", "Holiday", "Sick"],
+    "Skill_Level": ["Apprentice", "Journeyman", "Lead", "Supervisor"],
+    "Equip_Status": ["Available", "In Use", "Maintenance", "Retired"],
+    "Equip_Condition": ["Excellent", "Good", "Fair", "Poor"],
+    "Defect_Severity": ["Critical", "Major", "Minor", "Cosmetic"],
+    "Defect_Status": ["Open", "Assigned", "In Progress", "Fixed", "Verified", "Closed"],
+    "Safety_Result": ["Pass", "Fail", "N/A", "Corrected"],
+    "Incident_Type": ["Near Miss", "First Aid", "Medical", "Property Damage", "Environmental"],
+    "Invoice_Status": ["Draft", "Sent", "Partial", "Paid", "Overdue", "Void"],
+    "Income_Type": ["Client Payment", "Deposit", "Retention Release", "Other"],
+    "Contract_Type": ["GC Agreement", "Design", "Subcontract", "Supply", "Change Order"],
+    "Contract_Status": ["Draft", "Sent", "Signed", "Active", "Expired", "Closed"],
+    "Service_Type": ["Warranty Claim", "Callback", "Maintenance", "Consultation"],
+    "Service_Status": ["Open", "Scheduled", "In Progress", "Closed", "Escalated"],
+    "Checklist_Status": ["Not Started", "In Progress", "Complete", "N/A"],
+    "Quality_Result": ["Pass", "Fail", "Conditional"],
+    "Phase_Status": ["To Do", "Scheduled", "In Progress", "Inspection", "Completed", "Blocked"],
+    "Sel_Status": ["Considering", "Sampled", "Approved", "Rejected", "Installed"],
 }
 
-# Extra empty rows unlocked for new records (input columns only)
-INPUT_PAD_TO = 200
+HEADERS_EXTRA = {
+    "Project Phases": [
+        "Phase ID", "Project ID", "Phase", "Start", "End", "Duration (days)",
+        "Budget", "Spent", "Remaining", "% Complete", "Status", "Predecessor",
+        "Owner", "Milestone", "Notes",
+    ],
+    "Client Master Data": [
+        "Client ID", "Name", "Type", "Email", "Phone", "Street", "City",
+        "Property ID", "Project ID", "Status", "Source", "Budget Range",
+        "Assigned PM", "Last Contact", "Sat. Score", "Notes",
+    ],
+    "Client Communication": [
+        "Comm ID", "Date", "Client ID", "Project ID", "Type", "Subject",
+        "Summary", "Owner", "Follow-up", "Status", "Linked Task",
+    ],
+    "Client Satisfaction": [
+        "Survey ID", "Date", "Client ID", "Project ID", "Phase", "Channel",
+        "Overall", "Quality", "Communication", "Schedule", "Budget",
+        "NPS", "Comment", "Status",
+    ],
+    "Contractor Performance": [
+        "Contractor ID", "Company", "Trade", "Jobs", "Contract $", "Paid",
+        "Balance", "Quality", "On-Time", "Score", "Open Snags", "Rating Band",
+    ],
+    "Material Estimation": [
+        "Est ID", "Project ID", "Room ID", "Category", "Item", "Unit",
+        "Qty", "Waste %", "Qty + Waste", "Unit Cost", "Labor Hrs",
+        "Labor Rate", "Material $", "Labor $", "Total", "Notes",
+    ],
+    "Purchase Orders": [
+        "PO ID", "Date", "Project ID", "Supplier", "Status", "Subtotal",
+        "Tax", "Freight", "Total", "Paid", "Balance", "Expected", "Received", "Notes",
+    ],
+    "Material Inventory": [
+        "Stock ID", "SKU", "Product", "Category", "Location", "On Hand",
+        "Reserved", "Available", "Reorder Pt", "Unit Cost", "Stock Value",
+        "Status", "Last Count", "Supplier",
+    ],
+    "Worker Master Data": [
+        "Worker ID", "Name", "Trade", "Skill", "Contractor ID", "Phone",
+        "Daily Rate", "Hourly Rate", "OT Mult", "Status", "Hire Date",
+        "Certifications", "Emergency Contact",
+    ],
+    "Worker Attendance": [
+        "Att ID", "Date", "Worker ID", "Project ID", "Status",
+        "Regular Hrs", "OT Hrs", "Hourly", "OT Mult", "Regular Pay",
+        "OT Pay", "Total Pay", "Notes",
+    ],
+    "Labor Cost Calc": [
+        "Line ID", "Project ID", "Room ID", "Worker ID", "Task", "Date",
+        "Regular Hrs", "OT Hrs", "Hourly", "OT Mult", "Burden %",
+        "Regular $", "OT $", "Burden $", "Total $",
+    ],
+    "Productivity Tracker": [
+        "Prod ID", "Date", "Project ID", "Room ID", "Crew", "Activity",
+        "Planned Units", "Actual Units", "Unit", "Planned Hrs", "Actual Hrs",
+        "Units / Hr", "Variance %", "Status",
+    ],
+    "Room Work Checklist": [
+        "Check ID", "Project ID", "Room ID", "Phase", "Item", "Responsible",
+        "Status", "Due", "Done Date", "Photo", "Notes",
+    ],
+    "Room Cost Summary": [
+        "Room ID", "Project ID", "Room Name", "Area (sf)", "Budget",
+        "Materials", "Labor", "Other", "Spent", "Committed", "Remaining",
+        "$ / sf", "% Used", "Status",
+    ],
+    "Measurements Specs": [
+        "Meas ID", "Project ID", "Room ID", "Element", "Length (ft)",
+        "Width (ft)", "Height (ft)", "Area (sf)", "Perimeter (ft)",
+        "Openings (sf)", "Net Area", "Finish / Spec", "Tolerance", "Verified",
+    ],
+    "Material Selection": [
+        "Sel ID", "Project ID", "Room ID", "Category", "Product", "Brand",
+        "SKU", "Finish", "Supplier", "Unit Cost", "Status", "Sample Date",
+        "Approved By", "Photo", "Notes",
+    ],
+    "Equipment Inventory": [
+        "Equip ID", "Name", "Type", "Brand", "Serial", "Own / Rent",
+        "Daily Rate", "Status", "Condition", "Assigned To", "Location",
+        "In Service", "Value",
+    ],
+    "Equipment Usage Log": [
+        "Use ID", "Date", "Equip ID", "Project ID", "Operator", "Hours",
+        "Daily Rate", "Cost", "From", "To", "Notes",
+    ],
+    "Equipment Maintenance": [
+        "EM ID", "Equip ID", "Type", "Service Date", "Next Due", "Cost",
+        "Vendor", "Status", "Notes", "Days Until",
+    ],
+    "Quality Standards": [
+        "Std ID", "Category", "Requirement", "Tolerance", "Test Method",
+        "Frequency", "Responsible", "Spec Link",
+    ],
+    "Defect Snagging List": [
+        "Snag ID", "Date", "Project ID", "Room ID", "Location", "Description",
+        "Severity", "Assigned To", "Due", "Status", "Est. Cost",
+        "Closed Date", "Photo", "Open Rank",
+    ],
+    "Safety Checklist": [
+        "Safe ID", "Date", "Project ID", "Item", "Category", "Result",
+        "Hazard", "Corrective Action", "Owner", "Due", "Status",
+    ],
+    "Incident Accident Log": [
+        "Inc ID", "Date", "Project ID", "Type", "Person", "Description",
+        "Injury", "Treatment", "Reported To", "Recordable", "Status", "Follow-up",
+    ],
+    "Invoice Management": [
+        "Inv ID", "Date", "Client ID", "Project ID", "Description",
+        "Subtotal", "Tax", "Total", "Paid", "Balance", "Due", "Status", "Aging",
+    ],
+    "Payment Receipts": [
+        "Rcpt ID", "Date", "Invoice ID", "Client ID", "Amount", "Method",
+        "Reference", "Deposited", "Notes",
+    ],
+    "Income Tracker": [
+        "Inc ID", "Date", "Project ID", "Type", "Source", "Description",
+        "Amount", "Method", "Status", "Invoice ID", "Notes",
+    ],
+    "Profit Loss Project": [
+        "Project ID", "Name", "Income", "Labor", "Materials", "Other Cost",
+        "Total Cost", "Gross Profit", "Margin %", "Status",
+    ],
+    "Cash Flow Tracker": [
+        "Month", "Opening", "Income", "Expenses", "Net", "Closing", "Notes",
+    ],
+    "Contract Register": [
+        "Contract ID", "Project ID", "Type", "Party", "Value", "Start",
+        "End", "Status", "Signed", "Retention %", "Doc Link", "Notes",
+    ],
+    "After-Sales Service": [
+        "Svc ID", "Date", "Client ID", "Project ID", "Type", "Issue",
+        "Priority", "Assigned", "Due", "Status", "Cost", "Resolution",
+    ],
+}
+
+# ---------------------------------------------------------------------------
+# Project phases (aligned with Timeline)
+# ---------------------------------------------------------------------------
+PROJECT_PHASES = [
+    ["PH-01", "PRJ-001", "Planning", date(2026, 3, 1), date(2026, 3, 31), None, 2000, None, None, 1.00, "Completed", "", "Marcus Webb", "Scope lock", "Kickoff complete"],
+    ["PH-02", "PRJ-001", "Design", date(2026, 3, 15), date(2026, 5, 15), None, 4800, None, None, 1.00, "Completed", "PH-01", "Sofia Alvarez", "Drawings approved", "Kitchen v4 signed"],
+    ["PH-03", "PRJ-001", "Permits", date(2026, 4, 1), date(2026, 5, 20), None, 1850, None, None, 1.00, "Completed", "PH-01", "Marcus Webb", "Permit issued", "2026-REM-44182"],
+    ["PH-04", "PRJ-001", "Demolition", date(2026, 5, 21), date(2026, 6, 5), None, 2800, None, None, 1.00, "Completed", "PH-03", "Marcus Webb", "Demo complete", ""],
+    ["PH-05", "PRJ-001", "Electrical", date(2026, 6, 1), date(2026, 7, 10), None, 2620, None, None, 0.95, "Completed", "PH-04", "Jordan Hale", "Rough passed", "Finish pending cabinets"],
+    ["PH-06", "PRJ-001", "Plumbing", date(2026, 6, 8), date(2026, 7, 20), None, 5140, None, None, 1.00, "Completed", "PH-04", "Sam Ortiz", "Trim complete", ""],
+    ["PH-07", "PRJ-001", "Walls / plaster", date(2026, 7, 15), date(2026, 8, 10), None, 2000, None, None, 1.00, "Completed", "PH-05", "Leo Park", "Walls closed", ""],
+    ["PH-08", "PRJ-001", "Flooring", date(2026, 8, 5), date(2026, 8, 28), None, 8600, None, None, 0.75, "In Progress", "PH-07", "Elena Voss", "Finish this week", "No traffic 48 hrs"],
+    ["PH-09", "PRJ-001", "Cabinetry", date(2026, 8, 20), date(2026, 9, 15), None, 18400, None, None, 0.55, "In Progress", "PH-08", "Maya Chen", "Boxes set", "Hardware in transit"],
+    ["PH-10", "PRJ-001", "Counters / appliances", date(2026, 9, 10), date(2026, 9, 18), None, 12000, None, None, 0.10, "Scheduled", "PH-09", "Heritage Tile", "Template 4 Sep", ""],
+    ["PH-11", "PRJ-001", "Painting", date(2026, 9, 10), date(2026, 9, 28), None, 3600, None, None, 0.00, "Scheduled", "PH-07", "Leo Park", "Guest + dining + entry", ""],
+    ["PH-12", "PRJ-001", "Furniture", date(2026, 9, 25), date(2026, 10, 20), None, 4200, None, None, 0.00, "To Do", "PH-11", "Sofia Alvarez", "Order sofa by 1 Sep", ""],
+    ["PH-13", "PRJ-001", "Exterior / garden", date(2026, 10, 6), date(2026, 10, 24), None, 7400, None, None, 0.00, "To Do", "PH-11", "Theo Brooks", "Hold extras", "Contingency floor"],
+    ["PH-14", "PRJ-001", "Final inspection", date(2026, 10, 25), date(2026, 11, 5), None, 650, None, None, 0.00, "To Do", "PH-12", "Riley Grant", "City final", ""],
+    ["PH-15", "PRJ-001", "Handover", date(2026, 11, 10), date(2026, 11, 15), None, 500, None, None, 0.00, "To Do", "PH-14", "Marcus Webb", "Walkthrough", ""],
+    ["PH-16", "PRJ-002", "Cabin design", date(2026, 8, 1), date(2026, 9, 30), None, 1200, None, None, 0.40, "In Progress", "", "Sofia Alvarez", "Japandi lock", ""],
+    ["PH-17", "PRJ-002", "Cabin construction", date(2026, 10, 15), date(2026, 12, 10), None, 16000, None, None, 0.00, "To Do", "PH-16", "Marcus Webb", "After Maplewood", ""],
+]
+
+# ---------------------------------------------------------------------------
+# Clients / comms / satisfaction
+# ---------------------------------------------------------------------------
+CLIENTS = [
+    ["CL-001", "Alex Rivera", "Homeowner", "alex.rivera@email.example", "+1-503-555-0148",
+     "1847 Maplewood Drive", "Portland", "PROP-001", "PRJ-001", "Active",
+     "Referral — Luna Interiors", 85000, "Marcus Webb", date(2026, 8, 24), 4.6,
+     "Primary client. Also owns Gorge cabin."],
+    ["CL-002", "Alex Rivera (Gorge)", "Repeat", "alex.rivera@email.example", "+1-503-555-0148",
+     "88 Ridge Trail", "Hood River", "PROP-002", "PRJ-002", "Active",
+     "Repeat — Maplewood", 18500, "Marcus Webb", date(2026, 8, 18), 4.8,
+     "Bath-only cabin refresh after handover."],
+    ["CL-003", "Jordan Hale (neighbor lead)", "Lead", "j.hale.home@email.example", "+1-503-555-0201",
+     "1851 Maplewood Drive", "Portland", "", "", "Lead",
+     "Site conversation", 22000, "Marcus Webb", date(2026, 8, 12), "",
+     "Powder room + porch. Quote after Nov."],
+]
+
+CLIENT_COMMS = [
+    ["CM-001", date(2026, 3, 4), "CL-001", "PRJ-001", "Meeting", "Kickoff",
+     "Locked rooms, $85k budget, modern-warm palette.", "Marcus Webb", date(2026, 3, 8), "Closed", "TSK-001"],
+    ["CM-002", date(2026, 5, 18), "CL-001", "PRJ-001", "Email", "Marble vs porcelain",
+     "Alex approved porcelain floor swap (CO-001).", "Sofia Alvarez", date(2026, 5, 20), "Closed", ""],
+    ["CM-003", date(2026, 8, 20), "CL-001", "PRJ-001", "Call", "Cabinet delivery",
+     "Driveway clear 7:30 tomorrow.", "Maya Chen", date(2026, 8, 21), "Closed", "TSK-013"],
+    ["CM-004", date(2026, 8, 21), "CL-001", "PRJ-001", "Site Visit", "Island surface",
+     "Porcelain island only; quartz on run.", "Sofia Alvarez", date(2026, 8, 25), "Open", "TSK-026"],
+    ["CM-005", date(2026, 8, 24), "CL-001", "PRJ-001", "Email", "Contingency floor",
+     "Recommend pausing water feature.", "Morgan Ellis", date(2026, 8, 26), "Open", "AI-005"],
+    ["CM-006", date(2026, 8, 18), "CL-002", "PRJ-002", "Email", "Cabin Japandi board",
+     "Two fixture directions in Design Studio.", "Sofia Alvarez", date(2026, 9, 15), "Open", "TSK-028"],
+    ["CM-007", date(2026, 8, 12), "CL-003", " ", "Site Visit", "Neighbor intro",
+     "Walked powder + porch. Follow up after Nov handover.", "Marcus Webb", date(2026, 11, 20), "Open", ""],
+]
+
+CLIENT_SAT = [
+    ["SAT-001", date(2026, 5, 20), "CL-001", "PRJ-001", "Design", "Survey",
+     5, 5, 5, 4, 4, 9, "Loved the 3D dusk render.", "Closed"],
+    ["SAT-002", date(2026, 7, 15), "CL-001", "PRJ-001", "Construction", "Walkthrough",
+     4, 5, 4, 4, 3, 8, "Kitchen overage stings; bath looks great.", "Closed"],
+    ["SAT-003", date(2026, 8, 14), "CL-001", "PRJ-001", "Finishes", "Walkthrough",
+     5, 5, 5, 4, 4, 9, "Primary bath punch — haze only.", "Closed"],
+    ["SAT-004", date(2026, 8, 18), "CL-002", "PRJ-002", "Design", "Survey",
+     5, 5, 5, 5, 5, 10, "Cabin board is exactly the brief.", "Open"],
+]
+
+# ---------------------------------------------------------------------------
+# Materials ERP
+# ---------------------------------------------------------------------------
+ESTIMATES = [
+    ["EST-001", "PRJ-001", "RM-01", "Cabinetry", "Sage shaker + walnut island", "set", 1, 0.00, None, 14800, 32, 85, None, None, None, "Awarded Cascade"],
+    ["EST-002", "PRJ-001", "RM-01", "Counters", "Perimeter quartz Frost", "sf", 42, 0.08, None, 59, 8, 95, None, None, None, "Delivered"],
+    ["EST-003", "PRJ-001", "RM-01", "Counters", "Island porcelain HT-8841", "sf", 28, 0.10, None, 66.4, 6, 95, None, None, None, "Approved"],
+    ["EST-004", "PRJ-001", "RM-01", "Tile", "Zellige backsplash sand", "sf", 48, 0.15, None, 28, 10, 95, None, None, None, "Quoted"],
+    ["EST-005", "PRJ-001", "RM-01", "Flooring", "White oak 7in (kitchen share)", "sf", 200, 0.08, None, 8.2, 16, 80, None, None, None, "Installed"],
+    ["EST-006", "PRJ-001", "RM-03", "Tile", "Porcelain floor + shower", "sf", 200, 0.10, None, 15.6, 48, 95, None, None, None, "Installed"],
+    ["EST-007", "PRJ-001", "RM-03", "Electrical", "Heated floor kit", "kit", 1, 0.00, None, 1680, 6, 110, None, None, None, "Installed"],
+    ["EST-008", "PRJ-001", "RM-06", "Hardscape", "Bluestone path", "sf", 220, 0.08, None, 9.5, 24, 70, None, None, None, "On hold"],
+    ["EST-009", "PRJ-002", "RM-09", "Cabinetry", "Cedar vanity 36", "ea", 1, 0.00, None, 2100, 8, 85, None, None, None, "Required"],
+]
+
+PURCHASE_ORDERS = [
+    ["PO-114", date(2026, 6, 10), "PRJ-001", "Tile & Timber Co.", "Received", 3180, 0, 0, None, 3180, None, date(2026, 6, 20), date(2026, 6, 20), "Bath porcelain"],
+    ["PO-129", date(2026, 7, 18), "PRJ-001", "Tile & Timber Co.", "Received", 860, 0, 0, None, 860, None, date(2026, 7, 22), date(2026, 7, 18), "Laundry"],
+    ["PO-140", date(2026, 7, 1), "PRJ-001", "Timberline Floors", "Received", 6400, 0, 0, None, 6400, None, date(2026, 7, 28), date(2026, 7, 28), "White oak"],
+    ["PO-155", date(2026, 8, 22), "PRJ-001", "Heritage Tile & Stone", "Confirmed", 1860, 0, 85, None, 0, None, date(2026, 9, 8), None, "Island slab"],
+    ["PO-160", date(2026, 8, 18), "PRJ-001", "BrightPath Lighting", "Sent", 890, 0, 45, None, 0, None, date(2026, 9, 16), None, "Pendants"],
+    ["PO-CAB", date(2026, 8, 2), "PRJ-001", "Cascade Cabinets", "Partial", 14800, 0, 420, None, 7400, None, date(2026, 8, 20), date(2026, 8, 20), "Balance on install"],
+]
+
+STOCK = [
+    ["STK-001", "TL-WO-7", "White oak 7in leftover", "Flooring", "Garage rack", 42, 14, None, 20, 8.2, None, "Reserved", date(2026, 8, 22), "Timberline Floors"],
+    ["STK-002", "HT-8841F", "Porcelain floor extra", "Tile", "Bath crate", 5, 0, None, 4, 14.2, None, "In Stock", date(2026, 8, 12), "Tile & Timber Co."],
+    ["STK-003", "RJ-BP-128", "Aged brass bar pulls", "Hardware", "In transit", 0, 28, None, 0, 18, None, "On Order", date(2026, 8, 22), "Rejuvenation"],
+    ["STK-004", "BM-HC-50", "Interior paint — Clay", "Paint", "Not ordered", 0, 0, None, 2, 62, None, "Out", None, "Sherwin-Williams"],
+    ["STK-005", "CLE-Z-14", "Zellige sand", "Tile", "Not ordered", 0, 0, None, 10, 28, None, "Out", None, "Tile & Timber Co."],
+    ["STK-006", "CS-5110", "Quartz offcuts", "Counters", "Shop", 6, 0, None, 0, 59, None, "In Stock", date(2026, 8, 16), "Caesarstone"],
+    ["STK-007", "GG-BLU-12", "Bluestone pavers", "Hardscape", "Yard hold", 0, 0, None, 40, 9.5, None, "Out", None, "Garden & Gate"],
+]
+
+# ---------------------------------------------------------------------------
+# Labor
+# ---------------------------------------------------------------------------
+WORKERS = [
+    ["WK-001", "Maya Chen", "Cabinetry", "Lead", "CTR-001", "+1-503-555-0111", 680, None, 1.5, "Active", date(2024, 3, 1), "CCB millwork", "Eli Chen"],
+    ["WK-002", "Jordan Hale", "Electrical", "Lead", "CTR-002", "+1-503-555-0133", 880, None, 1.5, "Active", date(2023, 6, 12), "EL-44821", "Pat Hale"],
+    ["WK-003", "Sam Ortiz", "Plumbing", "Lead", "CTR-003", "+1-503-555-0140", 960, None, 1.5, "Active", date(2022, 9, 1), "PL-77310", "Ana Ortiz"],
+    ["WK-004", "Priya Shah", "Tile & Stone", "Lead", "CTR-004", "+1-503-555-0155", 760, None, 1.5, "Active", date(2021, 4, 18), "CCB-188442", "Dev Shah"],
+    ["WK-005", "Leo Park", "Painting", "Journeyman", "CTR-005", "+1-503-555-0122", 520, None, 1.5, "Active", date(2025, 1, 6), "CCB-201774", "Mina Park"],
+    ["WK-006", "Elena Voss", "Flooring", "Lead", "CTR-006", "+1-503-555-0166", 640, None, 1.5, "Active", date(2020, 8, 1), "CCB-176330", "Nils Voss"],
+    ["WK-007", "Theo Brooks", "Landscaping", "Journeyman", "CTR-010", "+1-503-555-0199", 560, None, 1.5, "Active", date(2024, 2, 14), "LCB-3320", "Kim Brooks"],
+    ["WK-008", "Chris Nguyen", "Carpentry", "Apprentice", "CTR-008", "+1-503-555-0174", 360, None, 1.5, "Active", date(2026, 4, 1), "OSHA-10", "Lan Nguyen"],
+]
+
+ATTENDANCE = [
+    ["AT-001", date(2026, 8, 18), "WK-001", "PRJ-001", "Present", 8, 0, None, 1.5, None, None, None, "Box scribe"],
+    ["AT-002", date(2026, 8, 19), "WK-001", "PRJ-001", "Present", 8, 1, None, 1.5, None, None, None, "Island level"],
+    ["AT-003", date(2026, 8, 20), "WK-001", "PRJ-001", "Present", 8, 2, None, 1.5, None, None, None, "Delivery day"],
+    ["AT-004", date(2026, 8, 21), "WK-001", "PRJ-001", "Present", 8, 0, None, 1.5, None, None, None, ""],
+    ["AT-005", date(2026, 8, 22), "WK-001", "PRJ-001", "Overtime", 8, 3, None, 1.5, None, None, None, "Catch hardware delay"],
+    ["AT-006", date(2026, 8, 18), "WK-006", "PRJ-001", "Present", 8, 0, None, 1.5, None, None, None, "Sand"],
+    ["AT-007", date(2026, 8, 19), "WK-006", "PRJ-001", "Present", 8, 0, None, 1.5, None, None, None, "First coat"],
+    ["AT-008", date(2026, 8, 20), "WK-004", "PRJ-001", "Half Day", 4, 0, None, 1.5, None, None, None, "Punch reclean"],
+    ["AT-009", date(2026, 8, 21), "WK-008", "PRJ-001", "Present", 8, 0, None, 1.5, None, None, None, "Entry bench"],
+    ["AT-010", date(2026, 8, 22), "WK-008", "PRJ-001", "Present", 8, 0, None, 1.5, None, None, None, ""],
+    ["AT-011", date(2026, 8, 24), "WK-001", "PRJ-001", "Present", 8, 0, None, 1.5, None, None, None, "As-of Monday"],
+    ["AT-012", date(2026, 8, 24), "WK-006", "PRJ-001", "Present", 8, 0, None, 1.5, None, None, None, "Finish prep"],
+]
+
+LABOR_COST = [
+    ["LC-001", "PRJ-001", "RM-01", "WK-001", "Cabinet box set", date(2026, 8, 20), 8, 2, None, 1.5, 0.18, None, None, None, None],
+    ["LC-002", "PRJ-001", "RM-01", "WK-001", "Cabinet scribe", date(2026, 8, 21), 8, 0, None, 1.5, 0.18, None, None, None, None],
+    ["LC-003", "PRJ-001", "RM-01", "WK-001", "Hardware delay catch-up", date(2026, 8, 22), 8, 3, None, 1.5, 0.18, None, None, None, None],
+    ["LC-004", "PRJ-001", "RM-02", "WK-006", "Floor sand + coat", date(2026, 8, 19), 8, 0, None, 1.5, 0.18, None, None, None, None],
+    ["LC-005", "PRJ-001", "RM-03", "WK-004", "Bath punch reclean", date(2026, 8, 20), 4, 0, None, 1.5, 0.18, None, None, None, None],
+    ["LC-006", "PRJ-001", "RM-08", "WK-008", "Entry bench", date(2026, 8, 21), 8, 0, None, 1.5, 0.18, None, None, None, None],
+    ["LC-007", "PRJ-001", "RM-01", "WK-002", "Island circuit check", date(2026, 8, 15), 3, 0, None, 1.5, 0.18, None, None, None, None],
+]
+
+PRODUCTIVITY = [
+    ["PR-001", date(2026, 8, 8), "PRJ-001", "RM-03", "Heritage crew", "Shower tile", 40, 38, "sf", 8, 8.5, None, None, "Complete"],
+    ["PR-002", date(2026, 8, 12), "PRJ-001", "RM-02", "Timberline", "Oak install", 220, 210, "sf", 8, 9, None, None, "Complete"],
+    ["PR-003", date(2026, 8, 20), "PRJ-001", "RM-01", "Cascade", "Cabinet boxes", 18, 16, "ea", 8, 10, None, None, "In Progress"],
+    ["PR-004", date(2026, 8, 21), "PRJ-001", "RM-08", "Ironwood", "Entry bench", 1, 1, "ea", 6, 8, None, None, "In Progress"],
+    ["PR-005", date(2026, 8, 22), "PRJ-001", "RM-02", "Timberline", "Finish coat prep", 1, 1, "room", 4, 4, None, None, "On Track"],
+    ["PR-006", date(2026, 7, 22), "PRJ-001", "RM-07", "Pacific", "Laundry install", 1, 1, "room", 6, 5.5, None, None, "Complete"],
+]
+
+# ---------------------------------------------------------------------------
+# Rooms / design extras
+# ---------------------------------------------------------------------------
+ROOM_CHECKS = [
+    ["CK-001", "PRJ-001", "RM-01", "Cabinetry", "Boxes level and scribed", "Maya Chen", "In Progress", date(2026, 8, 27), None, "", "Island still moving"],
+    ["CK-002", "PRJ-001", "RM-01", "Cabinetry", "Doors hung, gaps even", "Maya Chen", "Not Started", date(2026, 9, 5), None, "", "Wait on pulls"],
+    ["CK-003", "PRJ-001", "RM-01", "Counters", "Template after doors", "Heritage Tile", "Not Started", date(2026, 9, 4), None, "", ""],
+    ["CK-004", "PRJ-001", "RM-01", "Appliances", "Range / fridge openings", "Marcus Webb", "Not Started", date(2026, 9, 12), None, "", ""],
+    ["CK-005", "PRJ-001", "RM-03", "Punch", "Grout haze on niche", "Priya Shah", "In Progress", date(2026, 8, 26), None, "drive/photos/bath-niche", "Reclean Thu"],
+    ["CK-006", "PRJ-001", "RM-03", "Punch", "Door alignment", "Priya Shah", "Complete", date(2026, 8, 20), date(2026, 8, 20), "", ""],
+    ["CK-007", "PRJ-001", "RM-03", "Punch", "Silicone wet walls", "Priya Shah", "Complete", date(2026, 8, 14), date(2026, 8, 14), "", ""],
+    ["CK-008", "PRJ-001", "RM-07", "Closeout", "Utility sink sealed", "Sam Ortiz", "Complete", date(2026, 7, 24), date(2026, 7, 24), "", ""],
+    ["CK-009", "PRJ-001", "RM-02", "Flooring", "No traffic 48 hrs after coat", "Elena Voss", "In Progress", date(2026, 8, 30), None, "", "Tue coat"],
+    ["CK-010", "PRJ-001", "RM-08", "Carpentry", "Hook rail + bench", "Chris Nguyen", "In Progress", date(2026, 8, 29), None, "", ""],
+    ["CK-011", "PRJ-001", "RM-04", "Paint", "Palette lock clay + linen", "Sofia Alvarez", "Not Started", date(2026, 9, 8), None, "", "Awaiting Alex"],
+    ["CK-012", "PRJ-002", "RM-09", "Design", "Japandi fixture direction", "Sofia Alvarez", "In Progress", date(2026, 9, 15), None, "drive/mood/cabin", ""],
+]
+
+MEASUREMENTS = [
+    ["MS-001", "PRJ-001", "RM-01", "Kitchen floor", 16.0, 12.5, 9.0, None, None, 6.0, None, "White oak 7in", "1/8 in", "Yes"],
+    ["MS-002", "PRJ-001", "RM-01", "Island", 8.0, 3.5, 3.0, None, None, 0.0, None, "Porcelain slab", "1/16 in", "Yes"],
+    ["MS-003", "PRJ-001", "RM-01", "Backsplash run", 14.0, 0.0, 1.5, None, None, 4.5, None, "Zellige sand", "1/8 in", "No"],
+    ["MS-004", "PRJ-001", "RM-03", "Bath floor", 10.0, 8.0, 8.5, None, None, 8.0, None, "Porcelain 12x24", "1/16 in", "Yes"],
+    ["MS-005", "PRJ-001", "RM-03", "Shower walls", 9.0, 3.5, 8.0, None, None, 0.0, None, "Porcelain 12x24", "1/16 in", "Yes"],
+    ["MS-006", "PRJ-001", "RM-02", "Living floor", 20.0, 15.0, 9.5, None, None, 18.0, None, "White oak 7in", "1/8 in", "Yes"],
+    ["MS-007", "PRJ-001", "RM-08", "Entry", 8.0, 7.0, 9.5, None, None, 14.0, None, "Paint + oak bench", "1/4 in", "No"],
+    ["MS-008", "PRJ-002", "RM-09", "Cabin bath", 8.0, 6.5, 8.0, None, None, 6.0, None, "TBD Japandi", "1/8 in", "No"],
+]
+
+SELECTIONS = [
+    ["SEL-001", "PRJ-001", "RM-01", "Cabinetry", "Sage shaker inset", "Cascade", "CC-SH-Sage", "Sage / walnut", "Cascade Cabinets", 14800, "Approved", date(2026, 5, 12), "Alex Rivera", "drive/cabs/shaker-sage", ""],
+    ["SEL-002", "PRJ-001", "RM-01", "Counters", "Frost quartz", "Caesarstone", "CS-5110", "Frost", "Caesarstone", 59, "Installed", date(2026, 5, 20), "Sofia Alvarez", "drive/counters/frost", "Perimeter"],
+    ["SEL-003", "PRJ-001", "RM-01", "Counters", "Island porcelain", "Heritage", "HT-8841", "Soft white", "Heritage Tile & Stone", 66.4, "Approved", date(2026, 8, 21), "", "drive/bath/materials", "Pending sign"],
+    ["SEL-004", "PRJ-001", "RM-01", "Tile", "Zellige sand", "Cle", "CLE-Z-14", "Sand", "Tile & Timber Co.", 28, "Sampled", date(2026, 8, 10), "", "drive/tile/zellige", "Layout 8 Sep"],
+    ["SEL-005", "PRJ-001", "RM-01", "Hardware", "Bar pull 128", "Rejuvenation", "RJ-BP-128", "Aged brass", "Rejuvenation", 18, "Approved", date(2026, 6, 1), "Sofia Alvarez", "", "In transit"],
+    ["SEL-006", "PRJ-001", "RM-03", "Tile", "Porcelain 12x24", "Heritage", "HT-8841F", "Soft white", "Tile & Timber Co.", 14.2, "Installed", date(2026, 5, 18), "Alex Rivera", "", "vs marble"],
+    ["SEL-007", "PRJ-001", "RM-02", "Furniture", "Sven sofa", "Article", "ART-SVEN", "Oatmeal", "Article", 2400, "Considering", date(2026, 8, 15), "", "drive/furn/living", "Order by 1 Sep"],
+    ["SEL-008", "PRJ-002", "RM-09", "Fixtures", "Matte black set", "Brizo", "BZ-CB-01", "Matte black", "Ferguson", 720, "Considering", date(2026, 8, 18), "", "drive/mood/cabin", "Alt: aged brass"],
+]
+
+# ---------------------------------------------------------------------------
+# Equipment
+# ---------------------------------------------------------------------------
+EQUIPMENT = [
+    ["EQ-001", "Table saw", "Shop", "DeWalt", "DWE7491-441", "Own", 0, "In Use", "Good", "Maya Chen", "Maplewood garage", date(2023, 4, 1), 650],
+    ["EQ-002", "Track saw", "Shop", "Festool", "TS55-9921", "Own", 0, "In Use", "Excellent", "Maya Chen", "Kitchen", date(2024, 2, 1), 780],
+    ["EQ-003", "Tile wet saw", "Tile", "MK Diamond", "MK-101-18", "Own", 45, "Available", "Good", "Priya Shah", "Heritage shop", date(2022, 6, 1), 520],
+    ["EQ-004", "Floor sander", "Flooring", "Lagler", "HUMMEL-7", "Rent", 95, "In Use", "Good", "Elena Voss", "Living room", date(2026, 8, 5), 0],
+    ["EQ-005", "HEPA vac", "Dust", "Festool", "CT26-110", "Own", 0, "In Use", "Excellent", "Elena Voss", "Living room", date(2024, 9, 1), 620],
+    ["EQ-006", "Scaffold tower", "Access", "Werner", "WER-10-44", "Own", 35, "Available", "Fair", "Marcus Webb", "Ironwood yard", date(2021, 3, 1), 890],
+    ["EQ-007", "Dumpster 20 yd", "Haul", "WasteMgmt", "WM-20-8821", "Rent", 85, "Available", "Good", "Marcus Webb", "Off site", date(2026, 5, 21), 0],
+    ["EQ-008", "Laser level", "Layout", "Bosch", "GLL3-330", "Own", 0, "In Use", "Excellent", "Chris Nguyen", "Entry", date(2025, 1, 12), 210],
+]
+
+EQUIP_USAGE = [
+    ["EU-001", date(2026, 8, 20), "EQ-001", "PRJ-001", "Maya Chen", 6, 0, None, "Garage", "Kitchen", "Island stretchers"],
+    ["EU-002", date(2026, 8, 21), "EQ-002", "PRJ-001", "Maya Chen", 4, 0, None, "Kitchen", "Kitchen", "Scribe panels"],
+    ["EU-003", date(2026, 8, 18), "EQ-004", "PRJ-001", "Elena Voss", 8, 95, None, "Living", "Living", "Rental day 13"],
+    ["EU-004", date(2026, 8, 19), "EQ-004", "PRJ-001", "Elena Voss", 8, 95, None, "Living", "Dining", "Rental day 14"],
+    ["EU-005", date(2026, 8, 22), "EQ-005", "PRJ-001", "Elena Voss", 8, 0, None, "Living", "Living", "Finish dust"],
+    ["EU-006", date(2026, 8, 21), "EQ-008", "PRJ-001", "Chris Nguyen", 3, 0, None, "Entry", "Entry", "Bench height"],
+    ["EU-007", date(2026, 7, 10), "EQ-003", "PRJ-001", "Priya Shah", 8, 0, None, "Bath", "Bath", "Shower walls"],
+]
+
+EQUIP_MAINT = [
+    ["EM-001", "EQ-001", "Blade + alignment", date(2026, 7, 1), date(2026, 10, 1), 48, "Tool shop", "Upcoming", "Check fence", None],
+    ["EM-002", "EQ-004", "Rental return inspect", date(2026, 8, 28), date(2026, 8, 28), 0, "Rental yard", "Scheduled", "After finish coat", None],
+    ["EM-003", "EQ-006", "Weld crack on brace", date(2026, 6, 15), date(2026, 9, 15), 120, "Yard fab", "Due Soon", "Do not use until signed", None],
+    ["EM-004", "EQ-005", "Filter change", date(2026, 8, 1), date(2026, 11, 1), 35, "Festool", "Upcoming", "", None],
+    ["EM-005", "EQ-003", "Pump flush", date(2026, 7, 12), date(2027, 1, 12), 0, "Heritage", "Upcoming", "", None],
+]
+
+# ---------------------------------------------------------------------------
+# Quality / safety
+# ---------------------------------------------------------------------------
+QUALITY_STDS = [
+    ["QS-001", "Tile", "Lippage max 1/32 in on 12x24", "1/32 in", "Straightedge + feeler", "Each wall", "Priya Shah", "drive/spec/tile.pdf"],
+    ["QS-002", "Flooring", "Moisture < 12% before finish", "12%", "Pin meter", "Each room", "Elena Voss", "drive/spec/oak.pdf"],
+    ["QS-003", "Paint", "Sheen match within 5 GU", "5 GU", "Gloss meter", "Each elevation", "Leo Park", "drive/spec/paint.pdf"],
+    ["QS-004", "Cabinetry", "Reveal 1/8 in ± 1/32", "1/32 in", "Story pole", "Each run", "Maya Chen", "drive/spec/cabs.pdf"],
+    ["QS-005", "Counters", "Seam < 1/32, color match", "1/32 in", "Visual + card", "Each seam", "Heritage Tile", "drive/spec/stone.pdf"],
+    ["QS-006", "Electrical", "AFCI / GFCI as permitted", "Code", "City inspector", "Rough + final", "Jordan Hale", "NEC 2023"],
+    ["QS-007", "Plumbing", "Shower pan holds 24 hrs", "0 leak", "Flood test", "Before tile", "Sam Ortiz", "drive/insp/pan.pdf"],
+    ["QS-008", "Safety", "HEPA on all sanding", "Visible dust = fail", "Site walk", "Daily", "Marcus Webb", "drive/spec/dust.pdf"],
+]
+
+SNAGS = [
+    ["SN-001", date(2026, 8, 18), "PRJ-001", "RM-03", "Niche shelf", "Grout haze remaining",
+     "Cosmetic", "Priya Shah", date(2026, 8, 26), "In Progress", 0, None, "drive/photos/bath-niche", None],
+    ["SN-002", date(2026, 8, 20), "PRJ-001", "RM-01", "Island", "Island out of level 1/16 after delivery",
+     "Minor", "Maya Chen", date(2026, 8, 25), "Assigned", 0, None, "", None],
+    ["SN-003", date(2026, 8, 21), "PRJ-001", "RM-02", "Stair nosing", "Factory nosing backordered — site-cut approved",
+     "Minor", "Elena Voss", date(2026, 8, 28), "Assigned", 0, None, "", None],
+    ["SN-004", date(2026, 8, 12), "PRJ-001", "RM-03", "Shower door", "Strike plate high 2mm",
+     "Minor", "Priya Shah", date(2026, 8, 20), "Closed", 0, date(2026, 8, 20), "", None],
+    ["SN-005", date(2026, 7, 2), "PRJ-001", "RM-01", "Pantry", "Missing AFCI — added same day",
+     "Major", "Jordan Hale", date(2026, 7, 2), "Closed", 0, date(2026, 7, 2), "", None],
+    ["SN-006", date(2026, 8, 22), "PRJ-001", "RM-08", "Hook rail", "Wait for wall paint before final screws",
+     "Cosmetic", "Chris Nguyen", date(2026, 9, 22), "Open", 0, None, "", None],
+    ["SN-007", date(2026, 8, 23), "PRJ-001", "RM-01", "Hardware", "Pulls not on site — do not hang doors",
+     "Major", "Maya Chen", date(2026, 8, 29), "Open", 0, None, "", None],
+]
+
+SAFETY = [
+    ["SF-001", date(2026, 8, 18), "PRJ-001", "PPE on site", "PPE", "Pass", "", "", "Marcus Webb", None, "Complete"],
+    ["SF-002", date(2026, 8, 18), "PRJ-001", "HEPA vac during sanding", "Dust", "Pass", "", "", "Elena Voss", None, "Complete"],
+    ["SF-003", date(2026, 8, 19), "PRJ-001", "Ladder tied off at stair", "Access", "Fail", "Unsecured 6ft", "Tie and re-brief", "Chris Nguyen", date(2026, 8, 19), "Corrected"],
+    ["SF-004", date(2026, 8, 20), "PRJ-001", "Electrical lockout island circuit", "Electrical", "Pass", "", "", "Jordan Hale", None, "Complete"],
+    ["SF-005", date(2026, 8, 21), "PRJ-001", "Driveway / public way clear", "Site", "Pass", "", "Cones at cabinet truck", "Maya Chen", None, "Complete"],
+    ["SF-006", date(2026, 8, 22), "PRJ-001", "First-aid kit stocked", "Medical", "Pass", "", "", "Marcus Webb", None, "Complete"],
+    ["SF-007", date(2026, 8, 24), "PRJ-001", "Finish-coat ventilation", "Air", "N/A", "Coat Tuesday", "Open windows + fan", "Elena Voss", date(2026, 8, 26), "In Progress"],
+]
+
+INCIDENTS = [
+    ["INC-001", date(2026, 8, 19), "PRJ-001", "Near Miss", "Chris Nguyen",
+     "Ladder kicked at stair — no fall.", "None", "Re-brief + tie-off", "Marcus Webb", "No", "Closed", "SF-003"],
+    ["INC-002", date(2026, 6, 4), "PRJ-001", "First Aid", "Demo laborer",
+     "Cut on plaster lath — cleaned and bandaged.", "Laceration", "On-site first aid", "Marcus Webb", "No", "Closed", "Tetanus current"],
+    ["INC-003", date(2026, 7, 18), "PRJ-001", "Property Damage", "Tile crate",
+     "Crate corner crushed in driveway — 3 tiles broken.", "None", "Supplier replaced", "Harper Quinn", "No", "Closed", "Extra 5 tiles now stock"],
+]
+
+# ---------------------------------------------------------------------------
+# Billing / income / contracts / after-sales
+# ---------------------------------------------------------------------------
+INVOICES = [
+    ["INV-001", date(2026, 3, 15), "CL-001", "PRJ-001", "Draw 1 — mobilization + design start", 15000, 0, None, 15000, None, date(2026, 3, 29), "Paid", None],
+    ["INV-002", date(2026, 6, 1), "CL-001", "PRJ-001", "Draw 2 — demo + rough-in", 22000, 0, None, 22000, None, date(2026, 6, 15), "Paid", None],
+    ["INV-003", date(2026, 8, 1), "CL-001", "PRJ-001", "Draw 3 — finishes progress", 18000, 0, None, 12000, None, date(2026, 8, 15), "Partial", None],
+    ["INV-004", date(2026, 9, 15), "CL-001", "PRJ-001", "Draw 4 — cabinets + counters", 16000, 0, None, 0, None, date(2026, 9, 29), "Draft", None],
+    ["INV-005", date(2026, 11, 10), "CL-001", "PRJ-001", "Final + retention release", 14000, 0, None, 0, None, date(2026, 11, 24), "Draft", None],
+    ["INV-006", date(2026, 8, 1), "CL-002", "PRJ-002", "Cabin design deposit", 1200, 0, None, 600, None, date(2026, 8, 15), "Partial", None],
+]
+
+RECEIPTS = [
+    ["RCT-001", date(2026, 3, 18), "INV-001", "CL-001", 15000, "ACH", "WIRE-AR-0318", date(2026, 3, 18), "Draw 1"],
+    ["RCT-002", date(2026, 6, 8), "INV-002", "CL-001", 22000, "ACH", "WIRE-AR-0608", date(2026, 6, 8), "Draw 2"],
+    ["RCT-003", date(2026, 8, 10), "INV-003", "CL-001", 12000, "ACH", "WIRE-AR-0810", date(2026, 8, 10), "Partial draw 3"],
+    ["RCT-004", date(2026, 8, 1), "INV-006", "CL-002", 600, "ACH", "WIRE-AR-0801", date(2026, 8, 1), "Cabin deposit"],
+]
+
+INCOME = [
+    ["INC-001", date(2026, 3, 18), "PRJ-001", "Deposit", "Alex Rivera", "Draw 1 mobilization", 15000, "ACH", "Paid", "INV-001", ""],
+    ["INC-002", date(2026, 6, 8), "PRJ-001", "Client Payment", "Alex Rivera", "Draw 2 rough-in", 22000, "ACH", "Paid", "INV-002", ""],
+    ["INC-003", date(2026, 8, 10), "PRJ-001", "Client Payment", "Alex Rivera", "Draw 3 partial", 12000, "ACH", "Paid", "INV-003", ""],
+    ["INC-004", date(2026, 8, 15), "PRJ-001", "Client Payment", "Alex Rivera", "Draw 3 balance", 6000, "ACH", "Planned", "INV-003", "Awaiting"],
+    ["INC-005", date(2026, 9, 29), "PRJ-001", "Client Payment", "Alex Rivera", "Draw 4 cabinets", 16000, "ACH", "Planned", "INV-004", ""],
+    ["INC-006", date(2026, 8, 1), "PRJ-002", "Deposit", "Alex Rivera", "Cabin design deposit", 600, "ACH", "Paid", "INV-006", ""],
+    ["INC-007", date(2026, 9, 15), "PRJ-002", "Client Payment", "Alex Rivera", "Cabin design balance", 600, "ACH", "Planned", "INV-006", ""],
+]
+
+CONTRACTS = [
+    ["CON-001", "PRJ-001", "GC Agreement", "Ironwood Construction", 6200, date(2026, 3, 4), date(2026, 11, 15), "Active", "Yes", 0.05, "drive/docs/iw-contract.pdf", "Monthly supervision"],
+    ["CON-002", "PRJ-001", "Design", "Luna Interiors", 4800, date(2026, 3, 6), date(2026, 11, 1), "Active", "Yes", 0.00, "drive/docs/luna-contract.pdf", ""],
+    ["CON-003", "PRJ-001", "Subcontract", "Cascade Cabinets", 18400, date(2026, 5, 28), date(2026, 9, 15), "Active", "Yes", 0.00, "drive/docs/cascade-contract.pdf", "Includes install"],
+    ["CON-004", "PRJ-001", "Subcontract", "Heritage Tile & Stone", 7460, date(2026, 5, 20), date(2026, 8, 26), "Active", "Yes", 0.00, "drive/docs/heritage.pdf", "Punch open"],
+    ["CON-005", "PRJ-001", "Supply", "Timberline Floors", 8600, date(2026, 6, 1), date(2026, 8, 28), "Active", "Yes", 0.00, "", "Supply + install"],
+    ["CON-006", "PRJ-001", "Change Order", "Island porcelain CO-002", -460, date(2026, 8, 21), date(2026, 9, 11), "Sent", "No", 0.00, "drive/co/co-002.pdf", "Awaiting signature"],
+    ["CON-007", "PRJ-002", "Design", "Luna Interiors — cabin", 1200, date(2026, 8, 1), date(2026, 9, 30), "Active", "Yes", 0.00, "", "Concept only"],
+]
+
+AFTER_SALES = [
+    ["AS-001", date(2026, 8, 18), "CL-001", "PRJ-001", "Callback", "Grout haze on niche shelf",
+     "Low", "Priya Shah", date(2026, 8, 26), "Scheduled", 0, "Reclean Thursday"],
+    ["AS-002", date(2026, 8, 14), "CL-001", "PRJ-001", "Warranty Claim", "Register WarmFloor + Brizo",
+     "Medium", "Jamie Cole", date(2026, 9, 15), "Open", 0, "Need serials"],
+    ["AS-003", date(2026, 11, 16), "CL-001", "PRJ-001", "Consultation", "Handover packet walkthrough",
+     "Medium", "Marcus Webb", date(2026, 11, 16), "Open", 0, "After city final"],
+    ["AS-004", date(2026, 8, 18), "CL-002", "PRJ-002", "Consultation", "Cabin fixture direction",
+     "Low", "Sofia Alvarez", date(2026, 9, 15), "In Progress", 0, "Two options out"],
+]
+
+===== hrms/modules.py =====
+"""Contractor ERP modules (Module Quick Links).
+
+Excel- and Google-Sheets-safe: SUMIFS / COUNTIFS / INDEX / MATCH / IFERROR only.
+No FILTER, no array MATCH, no SMALL(IF), no spilled range refs.
+"""
+
+from __future__ import annotations
+
+from datetime import date, timedelta
+
+from openpyxl.chart import BarChart, LineChart, Reference
+from openpyxl.formatting.rule import ColorScaleRule, FormulaRule
+from openpyxl.utils import get_column_letter
+
+from . import data as D
+from . import extra_data as E
+from .styles import (
+    ACCENT,
+    BG,
+    CUR,
+    CUR2,
+    DANGER,
+    DANGER_SOFT,
+    DATE,
+    DEC1,
+    FORMULA_BG,
+    INFO,
+    INPUT_BG,
+    INT,
+    PCT,
+    PCT1,
+    PRIMARY,
+    PRIMARY_MID,
+    PRIMARY_SOFT,
+    ROW_ALT,
+    SECONDARY,
+    SUCCESS,
+    SUCCESS_SOFT,
+    TEXT,
+    TEXT_MUTED,
+    THIN,
+    WARNING,
+    WARNING_SOFT,
+    WHITE,
+    align,
+    fill,
+    font,
+    freeze,
+    header_row,
+    input_note,
+    kpi_card,
+    section_label,
+    set_col_widths,
+)
 
 
-def _is_formula(val) -> bool:
-    return isinstance(val, str) and val.startswith("=")
+def _imp():
+    """Late import so workbook.py can finish loading first."""
+    from . import workbook as W
+
+    return W
 
 
-def apply_cell_locks(ws) -> dict:
-    """Lock formulas/headers; unlock data-entry cells. Returns a small report."""
-    name = ws.title
-    max_row = ws.max_row or 1
-    max_col = ws.max_column or 1
-    locked = unlocked = 0
+# ---------------------------------------------------------------------------
+# Module Hub — matches the screenshot MODULE QUICK LINKS layout
+# ---------------------------------------------------------------------------
+HUB_ROWS = [
+    ("Project Module", PRIMARY, [
+        ("Project Master Data", "Projects"),
+        ("Project Phases", "Project Phases"),
+        ("Task Management", "Tasks"),
+        ("Gantt Chart", "Gantt Chart"),
+    ]),
+    ("Client Module", PRIMARY_MID, [
+        ("Client Master Data", "Client Master Data"),
+        ("Client Communication", "Client Communication"),
+        ("Client Satisfaction", "Client Satisfaction"),
+    ]),
+    ("Budget & Finance", SUCCESS, [
+        ("Budget Planning", "Budget"),
+        ("Cost Tracking", "Expenses"),
+        ("Budget Dashboard", "Finance"),
+        ("Change Orders", "Change Orders"),
+    ]),
+    ("Contractor & Vendor", PRIMARY_SOFT, [
+        ("Contractor Master List", "Contractors"),
+        ("Vendor Master Data", "Suppliers"),
+        ("Contractor Performance", "Contractor Performance"),
+        ("Contractor Payments", "Payments"),
+    ]),
+    ("Materials", WARNING, [
+        ("Material Master List", "Materials"),
+        ("Material Estimation", "Material Estimation"),
+        ("Purchase Orders", "Purchase Orders"),
+        ("Material Inventory", "Material Inventory"),
+    ]),
+    ("Labor", ACCENT, [
+        ("Worker Master Data", "Worker Master Data"),
+        ("Worker Attendance", "Worker Attendance"),
+        ("Labor Cost Calculator", "Labor Cost Calc"),
+        ("Productivity Tracker", "Productivity Tracker"),
+    ]),
+    ("Room Tracking", PRIMARY_MID, [
+        ("Room Area Master", "Rooms"),
+        ("Room Work Checklist", "Room Work Checklist"),
+        ("Room Cost Summary", "Room Cost Summary"),
+    ]),
+    ("Design", ACCENT, [
+        ("Design Requirements", "Design Studio"),
+        ("Measurements Specs", "Measurements Specs"),
+        ("Material Selection Board", "Material Selection"),
+    ]),
+    ("Equipment", INFO, [
+        ("Equipment Inventory", "Equipment Inventory"),
+        ("Equipment Usage Log", "Equipment Usage Log"),
+        ("Equipment Maintenance", "Equipment Maintenance"),
+    ]),
+    ("Quality", SUCCESS, [
+        ("Quality Standards", "Quality Standards"),
+        ("Inspection Log", "Inspections"),
+        ("Defect Snagging List", "Defect Snagging List"),
+    ]),
+    ("Safety", DANGER, [
+        ("Safety Checklist", "Safety Checklist"),
+        ("Incident Accident Log", "Incident Accident Log"),
+        ("Permits Compliance", "Permits"),
+    ]),
+    ("Quotation & Invoice", WARNING, [
+        ("Quotation Builder", "Quotes"),
+        ("Invoice Management", "Invoice Management"),
+        ("Payment Receipts", "Payment Receipts"),
+    ]),
+    ("Finance", SUCCESS, [
+        ("Income Tracker", "Income Tracker"),
+        ("Expense Tracker", "Expenses"),
+        ("Profit Loss Project", "Profit Loss Project"),
+        ("Cash Flow Tracker", "Cash Flow Tracker"),
+    ]),
+    ("Documents", PRIMARY, [
+        ("Document Register", "Documents"),
+        ("Contract Register", "Contract Register"),
+    ]),
+    ("Warranty", SUCCESS, [
+        ("Warranty Register", "Warranties"),
+        ("After-Sales Service", "After-Sales Service"),
+    ]),
+    ("Reports", PRIMARY_MID, [
+        ("Project Status Report", "Project Status Report"),
+        ("Weekly Progress Report", "Weekly Progress Report"),
+        ("KPI Dashboard", "KPI Dashboard"),
+    ]),
+]
 
-    formula_cols = set()
-    for row in ws.iter_rows(min_row=5, max_row=max_row, min_col=1, max_col=max_col):
-        for cell in row:
-            if isinstance(cell, MergedCell):
-                continue
-            if _is_formula(cell.value):
-                formula_cols.add(cell.column)
 
-    def set_lock(cell, lock: bool):
-        nonlocal locked, unlocked
-        if isinstance(cell, MergedCell):
-            return
-        cell.protection = LOCKED if lock else UNLOCKED
-        if lock:
-            locked += 1
+def build_module_hub(wb):
+    W = _imp()
+    ws = W._sheet(
+        wb, "Module Hub", PRIMARY, 12,
+        "Every module from the contractor operating system  ·  click a link to jump",
+    )
+    ws.merge_cells("A4:L4")
+    ws["A4"] = "MODULE QUICK LINKS"
+    ws["A4"].font = font(16, True, WHITE)
+    ws["A4"].fill = fill(PRIMARY_SOFT)
+    ws["A4"].alignment = align("left", "center")
+    for c in range(1, 13):
+        ws.cell(4, c).fill = fill(PRIMARY_SOFT)
+        ws.cell(4, c).border = THIN
+    ws.row_dimensions[4].height = 28
+
+    r = 5
+    for name, color, links in HUB_ROWS:
+        ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=2)
+        cell = ws.cell(r, 1, name)
+        cell.font = font(11, True, WHITE)
+        cell.fill = fill(color)
+        cell.alignment = align("left", "center")
+        ws.cell(r, 2).fill = fill(color)
+        ws.cell(r, 1).border = THIN
+        ws.cell(r, 2).border = THIN
+        col = 3
+        for label, target in links:
+            ws.merge_cells(start_row=r, start_column=col, end_row=r, end_column=col + 1)
+            link = ws.cell(r, col, f"→  {label}")
+            link.hyperlink = f"#'{target}'!A1"
+            link.font = font(10, False, PRIMARY)
+            link.fill = fill(WHITE)
+            link.alignment = align("left", "center")
+            ws.cell(r, col).border = THIN
+            ws.cell(r, col + 1).fill = fill(WHITE)
+            ws.cell(r, col + 1).border = THIN
+            col += 2
+        while col <= 12:
+            ws.cell(r, col).fill = fill(BG)
+            ws.cell(r, col).border = THIN
+            col += 1
+        ws.row_dimensions[r].height = 24
+        r += 1
+
+    r += 1
+    section_label(ws, r, 1, "Also in this workbook", 12)
+    extras = [
+        (r + 1, 1, "Start Here", "Start Here"),
+        (r + 1, 3, "Dashboard", "Dashboard"),
+        (r + 1, 5, "AI Insights", "AI Insights"),
+        (r + 1, 7, "Shopping List", "Shopping List"),
+        (r + 1, 9, "Calendar", "Calendar"),
+        (r + 1, 11, "Admin", "Admin"),
+        (r + 2, 1, "Inventory", "Inventory"),
+        (r + 2, 3, "Maintenance", "Maintenance"),
+        (r + 2, 5, "Users", "Users"),
+        (r + 2, 7, "Settings", "Settings"),
+        (r + 2, 9, "Lookups", "Lookups"),
+        (r + 2, 11, "Roles", "Roles & Permissions"),
+    ]
+    for rr, cc, label, target in extras:
+        ws.merge_cells(start_row=rr, start_column=cc, end_row=rr, end_column=cc + 1)
+        cell = ws.cell(rr, cc, label)
+        cell.hyperlink = f"#'{target}'!A1"
+        cell.font = font(10, True, WHITE)
+        cell.fill = fill(PRIMARY)
+        cell.alignment = align("center", "center")
+        ws.row_dimensions[rr].height = 20
+
+    input_note(
+        ws, r + 4, 1,
+        "Ivory cells on registers are unlocked inputs. Sand-grey cells are locked formulas. "
+        "Author: Novality store   ·   Unprotect password: premium   ·   Switch homes on Settings → Active Project ID.",
+        12,
+    )
+    set_col_widths(ws, [16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16])
+    freeze(ws, "A5")
+    return ws
+
+
+# ---------------------------------------------------------------------------
+# Registers
+# ---------------------------------------------------------------------------
+def build_project_phases(wb):
+    W = _imp()
+    headers = E.HEADERS_EXTRA["Project Phases"]
+    rows = [r[:] for r in E.PROJECT_PHASES]
+    ws, last = W.build_list_sheet(
+        wb, "Project Phases", PRIMARY,
+        "Phase register  ·  duration / spent / remaining are formulas  ·  spent = paid expenses in the phase dates",
+        headers, rows,
+        [10, 12, 22, 12, 12, 12, 12, 12, 12, 10, 14, 12, 16, 22, 28],
+        date_cols=[4, 5], money_cols=[7, 8, 9], pct_cols=[10],
+        validations=[("=Phase_Status", "K5:K80")],
+        status_col=11,
+        status_map={
+            "To Do": TEXT_MUTED, "Scheduled": WARNING, "In Progress": ACCENT,
+            "Inspection": INFO, "Completed": SUCCESS, "Blocked": DANGER,
+        },
+        last_col=15,
+    )
+    for r in range(5, last + 1):
+        ws.cell(r, 6).value = f'=IF($A{r}="","",$E{r}-$D{r}+1)'
+        ws.cell(r, 6).number_format = INT
+        ws.cell(r, 8).value = (
+            f'=IF($A{r}="","",SUMIFS(Expenses!$H:$H,Expenses!$C:$C,$B{r},'
+            f'Expenses!$J:$J,"Paid",Expenses!$B:$B,">="&$D{r},Expenses!$B:$B,"<="&$E{r}))'
+        )
+        ws.cell(r, 8).number_format = CUR
+        ws.cell(r, 9).value = f'=IF($A{r}="","",$G{r}-$H{r})'
+        ws.cell(r, 9).number_format = CUR
+        for c in (6, 8, 9):
+            ws.cell(r, c).fill = fill(FORMULA_BG)
+            ws.cell(r, c).border = THIN
+            ws.cell(r, c).font = font(10)
+        ws.cell(r, 7).fill = fill(INPUT_BG)
+        ws.cell(r, 7).number_format = CUR
+        ws.cell(r, 10).number_format = PCT
+    return ws, last
+
+
+def build_gantt_chart(wb):
+    W = _imp()
+    ws = W._sheet(
+        wb, "Gantt Chart", ACCENT, 14,
+        "Weekly Gantt of Project Phases  ·  gold header = this week  ·  D done · N now · P planned",
+    )
+    headers = ["Phase ID", "Project", "Phase", "Start", "End", "Status", "% Complete"]
+    header_row(ws, 4, headers)
+    n = len(E.PROJECT_PHASES)
+    for i in range(n):
+        r = 5 + i
+        src = 5 + i
+        ws.cell(r, 1).value = f"=IFERROR(INDEX('Project Phases'!A:A,{src}),\"\")"
+        ws.cell(r, 2).value = f"=IFERROR(INDEX('Project Phases'!B:B,{src}),\"\")"
+        ws.cell(r, 3).value = f"=IFERROR(INDEX('Project Phases'!C:C,{src}),\"\")"
+        ws.cell(r, 4).value = f"=IFERROR(INDEX('Project Phases'!D:D,{src}),\"\")"
+        ws.cell(r, 5).value = f"=IFERROR(INDEX('Project Phases'!E:E,{src}),\"\")"
+        ws.cell(r, 6).value = f"=IFERROR(INDEX('Project Phases'!K:K,{src}),\"\")"
+        ws.cell(r, 7).value = f"=IFERROR(INDEX('Project Phases'!J:J,{src}),\"\")"
+        ws.cell(r, 4).number_format = DATE
+        ws.cell(r, 5).number_format = DATE
+        ws.cell(r, 7).number_format = PCT
+        for c in range(1, 8):
+            ws.cell(r, c).fill = fill(FORMULA_BG if i % 2 == 0 else "EBE4D6")
+            ws.cell(r, c).border = THIN
+            ws.cell(r, c).font = font(10)
+    last = 4 + n
+
+    start = date(2026, 6, 1)
+    weeks = 28
+    g0 = 9
+    ws.cell(3, g0, "WEEKLY GANTT  ·  gold = this week")
+    ws.cell(3, g0).font = font(9, True, PRIMARY)
+    ws.merge_cells(start_row=3, start_column=g0, end_row=3, end_column=g0 + weeks - 1)
+    for w in range(weeks):
+        col = g0 + w
+        d0 = start + timedelta(days=7 * w)
+        cell = ws.cell(4, col, d0)
+        cell.number_format = "D-MMM"
+        cell.font = font(8, True, WHITE)
+        cell.fill = fill(PRIMARY)
+        cell.alignment = align("center", "center")
+        cell.border = THIN
+        ws.column_dimensions[get_column_letter(col)].width = 5
+        letter = get_column_letter(col)
+        for r in range(5, last + 1):
+            ws.cell(r, col).value = (
+                f'=IF(OR($D{r}="",$E{r}=""),"",'
+                f'IF(AND({letter}$4<=$E{r},{letter}$4+6>=$D{r}),'
+                f'IF($F{r}="Completed","D",IF($F{r}="In Progress","N","P")),""))'
+            )
+            ws.cell(r, col).alignment = align("center", "center")
+            ws.cell(r, col).font = font(8, True, WHITE)
+            ws.cell(r, col).border = THIN
+        ws.conditional_formatting.add(
+            f"{letter}4",
+            FormulaRule(
+                formula=[f"AND({letter}4<=AsOfDate,{letter}4+6>=AsOfDate)"],
+                fill=fill(ACCENT),
+                font=font(8, True, WHITE),
+            ),
+        )
+    g_range = f"I5:{get_column_letter(g0 + weeks - 1)}{last}"
+    ws.conditional_formatting.add(g_range, FormulaRule(formula=['I5="D"'], fill=fill(SUCCESS), font=font(8, True, SUCCESS)))
+    ws.conditional_formatting.add(g_range, FormulaRule(formula=['I5="N"'], fill=fill(ACCENT), font=font(8, True, ACCENT)))
+    ws.conditional_formatting.add(g_range, FormulaRule(formula=['I5="P"'], fill=fill(SECONDARY), font=font(8, True, SECONDARY)))
+    set_col_widths(ws, [10, 12, 22, 12, 12, 14, 12, 4])
+    freeze(ws, "A5")
+    return ws
+
+
+def build_clients(wb):
+    W = _imp()
+    return W.build_list_sheet(
+        wb, "Client Master Data", PRIMARY_MID,
+        "Homeowners and leads  ·  one row per client / property pairing",
+        E.HEADERS_EXTRA["Client Master Data"], E.CLIENTS,
+        [12, 24, 12, 32, 16, 24, 14, 12, 12, 12, 22, 14, 16, 12, 10, 40],
+        date_cols=[14], money_cols=[12],
+        validations=[("=Client_Type", "C5:C80"), ("=Client_Status", "J5:J80")],
+        status_col=10,
+        status_map={"Lead": INFO, "Active": SUCCESS, "On Hold": WARNING, "Complete": PRIMARY, "Inactive": TEXT_MUTED},
+    )
+
+
+def build_client_comms(wb):
+    W = _imp()
+    return W.build_list_sheet(
+        wb, "Client Communication", INFO,
+        "Formal CRM log  ·  meetings, calls, emails, site visits  ·  chat lives on Messages",
+        E.HEADERS_EXTRA["Client Communication"], E.CLIENT_COMMS,
+        [10, 12, 12, 12, 12, 22, 52, 16, 12, 12, 12],
+        date_cols=[2, 9],
+        validations=[("=Comm_Type", "E5:E80")],
+        status_col=10,
+        status_map={"Open": WARNING, "Closed": SUCCESS},
+    )
+
+
+def build_satisfaction(wb):
+    W = _imp()
+    return W.build_list_sheet(
+        wb, "Client Satisfaction", SUCCESS,
+        "Scores 1–5  ·  NPS −100 to 100  ·  walkthroughs and surveys",
+        E.HEADERS_EXTRA["Client Satisfaction"], E.CLIENT_SAT,
+        [12, 12, 12, 12, 14, 14, 10, 10, 14, 10, 10, 8, 44, 12],
+        date_cols=[2],
+        validations=[("=Sat_Channel", "F5:F80")],
+        status_col=14,
+        status_map={"Open": WARNING, "Closed": SUCCESS},
+    )
+
+
+def build_performance(wb):
+    W = _imp()
+    headers = E.HEADERS_EXTRA["Contractor Performance"]
+    rows = []
+    for c in D.CONTRACTORS:
+        rows.append([c[0], c[1], c[3]] + [None] * 9)
+    ws, last = W.build_list_sheet(
+        wb, "Contractor Performance", PRIMARY,
+        "Live roll-up from Jobs + Contractors + Defect Snagging List",
+        headers, rows,
+        [14, 24, 16, 8, 12, 12, 12, 10, 10, 10, 12, 14],
+        money_cols=[5, 6, 7], pct_cols=[8, 9, 10],
+        last_col=12,
+    )
+    for r in range(5, last + 1):
+        ws.cell(r, 4).value = f'=IF($A{r}="","",COUNTIF(Jobs!D:D,$A{r}))'
+        ws.cell(r, 5).value = f'=IF($A{r}="","",SUMIF(Jobs!D:D,$A{r},Jobs!K:K))'
+        ws.cell(r, 6).value = f'=IF($A{r}="","",SUMIF(Jobs!D:D,$A{r},Jobs!L:L))'
+        ws.cell(r, 7).value = f'=IF($A{r}="","",$E{r}-$F{r})'
+        ws.cell(r, 8).value = f'=IFERROR(INDEX(Contractors!I:I,MATCH($A{r},Contractors!A:A,0)),"")'
+        ws.cell(r, 9).value = f'=IFERROR(INDEX(Contractors!J:J,MATCH($A{r},Contractors!A:A,0)),"")'
+        ws.cell(r, 10).value = f'=IFERROR(INDEX(Contractors!M:M,MATCH($A{r},Contractors!A:A,0)),"")'
+        ws.cell(r, 11).value = (
+            f'=IF($A{r}="","",COUNTIFS(\'Defect Snagging List\'!H:H,'
+            f'IFERROR(INDEX(Contractors!C:C,MATCH($A{r},Contractors!A:A,0)),""),'
+            f'\'Defect Snagging List\'!J:J,"<>Closed"))'
+        )
+        ws.cell(r, 12).value = (
+            f'=IF($J{r}="","",IF($J{r}>=0.93,"Preferred",IF($J{r}>=0.88,"Solid",IF($J{r}>=0.8,"Watch","Do Not Use"))))'
+        )
+        for c in range(4, 13):
+            ws.cell(r, c).fill = fill(FORMULA_BG)
+            ws.cell(r, c).border = THIN
+            ws.cell(r, c).font = font(10)
+            if c in (5, 6, 7):
+                ws.cell(r, c).number_format = CUR
+            if c in (8, 9, 10):
+                ws.cell(r, c).number_format = PCT
+    W._status_cf(ws, "L", 5, max(last, 80), {
+        "Preferred": SUCCESS, "Solid": INFO, "Watch": WARNING, "Do Not Use": DANGER,
+    })
+    return ws, last
+
+
+def build_estimates(wb):
+    W = _imp()
+    headers = E.HEADERS_EXTRA["Material Estimation"]
+    rows = [r[:] for r in E.ESTIMATES]
+    ws, last = W.build_list_sheet(
+        wb, "Material Estimation", WARNING,
+        "Takeoff  ·  qty + waste, material $, labor $, total",
+        headers, rows,
+        [10, 12, 10, 12, 32, 8, 8, 10, 12, 12, 10, 12, 12, 12, 12, 22],
+        money_cols=[10, 12, 13, 14, 15], pct_cols=[8],
+        last_col=16,
+    )
+    for r in range(5, last + 1):
+        ws.cell(r, 9).value = f'=IF($A{r}="","",$G{r}*(1+$H{r}))'
+        ws.cell(r, 9).number_format = DEC1
+        ws.cell(r, 13).value = f'=IF($A{r}="","",$I{r}*$J{r})'
+        ws.cell(r, 13).number_format = CUR
+        ws.cell(r, 14).value = f'=IF($A{r}="","",$K{r}*$L{r})'
+        ws.cell(r, 14).number_format = CUR
+        ws.cell(r, 15).value = f'=IF($A{r}="","",$M{r}+$N{r})'
+        ws.cell(r, 15).number_format = CUR
+        for c in (9, 13, 14, 15):
+            ws.cell(r, c).fill = fill(FORMULA_BG)
+            ws.cell(r, c).border = THIN
+            ws.cell(r, c).font = font(10)
+        ws.cell(r, 8).number_format = PCT
+    t = last + 2
+    ws.cell(t, 12, "TOTAL").font = font(11, True, WHITE)
+    ws.cell(t, 13, f"=SUM(M5:M{last})").number_format = CUR
+    ws.cell(t, 14, f"=SUM(N5:N{last})").number_format = CUR
+    ws.cell(t, 15, f"=SUM(O5:O{last})").number_format = CUR
+    for c in range(12, 16):
+        ws.cell(t, c).fill = fill(PRIMARY)
+        ws.cell(t, c).font = font(11, True, WHITE)
+        ws.cell(t, c).border = THIN
+    return ws, last
+
+
+def build_purchase_orders(wb):
+    W = _imp()
+    headers = E.HEADERS_EXTRA["Purchase Orders"]
+    rows = [r[:] for r in E.PURCHASE_ORDERS]
+    ws, last = W.build_list_sheet(
+        wb, "Purchase Orders", WARNING,
+        "PO header  ·  total / balance formulas  ·  line items live on Materials (Receipt column)",
+        headers, rows,
+        [10, 12, 12, 24, 12, 12, 10, 10, 12, 12, 12, 12, 12, 22],
+        date_cols=[2, 12, 13], money_cols=[6, 7, 8, 9, 10, 11],
+        validations=[("=PO_Status", "E5:E80")],
+        status_col=5,
+        status_map={
+            "Draft": TEXT_MUTED, "Sent": INFO, "Confirmed": WARNING,
+            "Partial": ACCENT, "Received": SUCCESS, "Closed": PRIMARY, "Cancelled": DANGER,
+        },
+        last_col=14,
+    )
+    for r in range(5, last + 1):
+        ws.cell(r, 9).value = f'=IF($A{r}="","",$F{r}+$G{r}+$H{r})'
+        ws.cell(r, 11).value = f'=IF($A{r}="","",$I{r}-$J{r})'
+        ws.cell(r, 9).number_format = CUR
+        ws.cell(r, 11).number_format = CUR
+        ws.cell(r, 9).fill = fill(FORMULA_BG)
+        ws.cell(r, 11).fill = fill(FORMULA_BG)
+        ws.cell(r, 9).border = THIN
+        ws.cell(r, 11).border = THIN
+        ws.cell(r, 9).font = font(10)
+        ws.cell(r, 11).font = font(10)
+    return ws, last
+
+
+def build_stock(wb):
+    W = _imp()
+    headers = E.HEADERS_EXTRA["Material Inventory"]
+    rows = [r[:] for r in E.STOCK]
+    ws, last = W.build_list_sheet(
+        wb, "Material Inventory", WARNING,
+        "Yard / garage stock  ·  available = on hand − reserved  ·  value = available × unit cost",
+        headers, rows,
+        [10, 12, 28, 12, 16, 10, 10, 10, 12, 12, 12, 12, 12, 22],
+        date_cols=[13], money_cols=[10, 11],
+        validations=[("=Stock_Status", "L5:L80")],
+        status_col=12,
+        status_map={
+            "In Stock": SUCCESS, "Low": WARNING, "Out": DANGER,
+            "On Order": INFO, "Reserved": ACCENT,
+        },
+        last_col=14,
+    )
+    for r in range(5, last + 1):
+        ws.cell(r, 8).value = f'=IF($A{r}="","",$F{r}-$G{r})'
+        ws.cell(r, 11).value = f'=IF($A{r}="","",$H{r}*$J{r})'
+        ws.cell(r, 11).number_format = CUR
+        ws.cell(r, 8).fill = fill(FORMULA_BG)
+        ws.cell(r, 11).fill = fill(FORMULA_BG)
+        ws.cell(r, 8).border = THIN
+        ws.cell(r, 11).border = THIN
+        ws.cell(r, 8).font = font(10)
+        ws.cell(r, 11).font = font(10)
+        ws.cell(r, 10).number_format = CUR2
+    return ws, last
+
+
+def build_workers(wb):
+    W = _imp()
+    headers = E.HEADERS_EXTRA["Worker Master Data"]
+    rows = [r[:] for r in E.WORKERS]
+    ws, last = W.build_list_sheet(
+        wb, "Worker Master Data", ACCENT,
+        "Crew book  ·  hourly = daily / 8",
+        headers, rows,
+        [12, 16, 14, 12, 14, 16, 12, 12, 10, 12, 12, 18, 16],
+        date_cols=[11], money_cols=[7, 8],
+        validations=[("=Skill_Level", "D5:D80"), ("=Worker_Status", "J5:J80"), ("=Trade", "C5:C80")],
+        status_col=10,
+        status_map={"Active": SUCCESS, "On Leave": WARNING, "Terminated": DANGER},
+        last_col=13,
+    )
+    for r in range(5, last + 1):
+        ws.cell(r, 8).value = f'=IF($A{r}="","",$G{r}/8)'
+        ws.cell(r, 8).number_format = CUR2
+        ws.cell(r, 8).fill = fill(FORMULA_BG)
+        ws.cell(r, 8).border = THIN
+        ws.cell(r, 8).font = font(10)
+        ws.cell(r, 7).number_format = CUR
+    return ws, last
+
+
+def build_attendance(wb):
+    W = _imp()
+    headers = E.HEADERS_EXTRA["Worker Attendance"]
+    rows = [r[:] for r in E.ATTENDANCE]
+    ws, last = W.build_list_sheet(
+        wb, "Worker Attendance", ACCENT,
+        "Daily timesheet  ·  hourly and OT pulled from Worker Master Data",
+        headers, rows,
+        [10, 12, 12, 12, 12, 12, 10, 10, 10, 12, 12, 12, 22],
+        date_cols=[2], money_cols=[8, 10, 11, 12],
+        validations=[("=Attendance_Status", "E5:E200")],
+        status_col=5,
+        status_map={
+            "Present": SUCCESS, "Absent": DANGER, "Half Day": WARNING,
+            "Overtime": ACCENT, "Holiday": INFO, "Sick": TEXT_MUTED,
+        },
+        last_col=13,
+    )
+    for r in range(5, last + 1):
+        ws.cell(r, 8).value = f'=IF($C{r}="","",IFERROR(INDEX(\'Worker Master Data\'!H:H,MATCH($C{r},\'Worker Master Data\'!A:A,0)),0))'
+        ws.cell(r, 9).value = f'=IF($C{r}="","",IFERROR(INDEX(\'Worker Master Data\'!I:I,MATCH($C{r},\'Worker Master Data\'!A:A,0)),1.5))'
+        ws.cell(r, 10).value = f'=IF($A{r}="","",$F{r}*$H{r})'
+        ws.cell(r, 11).value = f'=IF($A{r}="","",$G{r}*$H{r}*$I{r})'
+        ws.cell(r, 12).value = f'=IF($A{r}="","",$J{r}+$K{r})'
+        for c in range(8, 13):
+            ws.cell(r, c).fill = fill(FORMULA_BG)
+            ws.cell(r, c).border = THIN
+            ws.cell(r, c).font = font(10)
+            if c != 9:
+                ws.cell(r, c).number_format = CUR2
+    return ws, last
+
+
+def build_labor_cost(wb):
+    W = _imp()
+    headers = E.HEADERS_EXTRA["Labor Cost Calc"]
+    rows = [r[:] for r in E.LABOR_COST]
+    ws, last = W.build_list_sheet(
+        wb, "Labor Cost Calc", ACCENT,
+        "Job-costed labor  ·  hourly from Worker Master  ·  burden on Settings-style 18%",
+        headers, rows,
+        [10, 12, 10, 12, 28, 12, 12, 10, 10, 10, 10, 12, 10, 12, 12],
+        date_cols=[6], money_cols=[9, 12, 13, 14, 15], pct_cols=[11],
+        last_col=15,
+    )
+    for r in range(5, last + 1):
+        ws.cell(r, 9).value = f'=IF($D{r}="","",IFERROR(INDEX(\'Worker Master Data\'!H:H,MATCH($D{r},\'Worker Master Data\'!A:A,0)),0))'
+        ws.cell(r, 10).value = f'=IF($D{r}="","",IFERROR(INDEX(\'Worker Master Data\'!I:I,MATCH($D{r},\'Worker Master Data\'!A:A,0)),1.5))'
+        ws.cell(r, 12).value = f'=IF($A{r}="","",$G{r}*$I{r})'
+        ws.cell(r, 13).value = f'=IF($A{r}="","",$H{r}*$I{r}*$J{r})'
+        ws.cell(r, 14).value = f'=IF($A{r}="","",($L{r}+$M{r})*$K{r})'
+        ws.cell(r, 15).value = f'=IF($A{r}="","",$L{r}+$M{r}+$N{r})'
+        for c in (9, 10, 12, 13, 14, 15):
+            ws.cell(r, c).fill = fill(FORMULA_BG)
+            ws.cell(r, c).border = THIN
+            ws.cell(r, c).font = font(10)
+            if c != 10:
+                ws.cell(r, c).number_format = CUR2
+        ws.cell(r, 11).number_format = PCT
+        ws.cell(r, 11).fill = fill(INPUT_BG)
+    t = last + 2
+    ws.cell(t, 11, "TOTAL").font = font(11, True, WHITE)
+    ws.cell(t, 15, f"=SUM(O5:O{last})").number_format = CUR
+    for c in (11, 15):
+        ws.cell(t, c).fill = fill(PRIMARY)
+        ws.cell(t, c).font = font(11, True, WHITE)
+        ws.cell(t, c).border = THIN
+    return ws, last
+
+
+def build_productivity(wb):
+    W = _imp()
+    headers = E.HEADERS_EXTRA["Productivity Tracker"]
+    rows = [r[:] for r in E.PRODUCTIVITY]
+    ws, last = W.build_list_sheet(
+        wb, "Productivity Tracker", ACCENT,
+        "Planned vs actual units and hours  ·  units/hr and variance are formulas",
+        headers, rows,
+        [10, 12, 12, 10, 16, 20, 12, 12, 8, 12, 12, 12, 12, 12],
+        date_cols=[2], pct_cols=[13],
+        last_col=14,
+    )
+    for r in range(5, last + 1):
+        ws.cell(r, 12).value = f'=IF(OR($A{r}="",$K{r}=0),"",$H{r}/$K{r})'
+        ws.cell(r, 12).number_format = "0.00"
+        ws.cell(r, 13).value = f'=IF(OR($A{r}="",$G{r}=0),"",($H{r}-$G{r})/$G{r})'
+        ws.cell(r, 13).number_format = PCT1
+        ws.cell(r, 12).fill = fill(FORMULA_BG)
+        ws.cell(r, 13).fill = fill(FORMULA_BG)
+        ws.cell(r, 12).border = THIN
+        ws.cell(r, 13).border = THIN
+        ws.cell(r, 12).font = font(10)
+        ws.cell(r, 13).font = font(10)
+    return ws, last
+
+
+def build_room_checks(wb):
+    W = _imp()
+    return W.build_list_sheet(
+        wb, "Room Work Checklist", PRIMARY_MID,
+        "Punch / closeout items per room  ·  filter by Room ID",
+        E.HEADERS_EXTRA["Room Work Checklist"], E.ROOM_CHECKS,
+        [10, 12, 10, 12, 36, 16, 14, 12, 12, 28, 22],
+        date_cols=[8, 9],
+        validations=[("=Checklist_Status", "G5:G200")],
+        status_col=7,
+        status_map={"Not Started": TEXT_MUTED, "In Progress": ACCENT, "Complete": SUCCESS, "N/A": INFO},
+    )
+
+
+def build_room_costs(wb):
+    W = _imp()
+    headers = E.HEADERS_EXTRA["Room Cost Summary"]
+    rows = []
+    for rm in D.ROOMS:
+        rows.append([rm[0], rm[1], rm[2]] + [None] * 11)
+    ws, last = W.build_list_sheet(
+        wb, "Room Cost Summary", PRIMARY,
+        "Live room P&L  ·  area / budget / status from Rooms  ·  spend from Expenses",
+        headers, rows,
+        [10, 12, 20, 12, 12, 12, 12, 12, 12, 12, 12, 10, 10, 14],
+        money_cols=[5, 6, 7, 8, 9, 10, 11, 12], pct_cols=[13],
+        last_col=14,
+    )
+    for r in range(5, last + 1):
+        ws.cell(r, 4).value = f'=IFERROR(INDEX(Rooms!Q:Q,MATCH($A{r},Rooms!A:A,0)),0)'
+        ws.cell(r, 5).value = f'=IFERROR(INDEX(Rooms!K:K,MATCH($A{r},Rooms!A:A,0)),0)'
+        ws.cell(r, 6).value = f'=IF($A{r}="","",SUMIFS(Expenses!H:H,Expenses!D:D,$A{r},Expenses!E:E,"Materials",Expenses!J:J,"Paid"))'
+        ws.cell(r, 7).value = f'=IF($A{r}="","",SUMIFS(Expenses!H:H,Expenses!D:D,$A{r},Expenses!E:E,"Labor",Expenses!J:J,"Paid"))'
+        ws.cell(r, 8).value = f'=IF($A{r}="","",SUMIFS(Expenses!H:H,Expenses!D:D,$A{r},Expenses!J:J,"Paid")-$F{r}-$G{r})'
+        ws.cell(r, 9).value = f'=IF($A{r}="","",$F{r}+$G{r}+$H{r})'
+        ws.cell(r, 10).value = f'=IFERROR(INDEX(Rooms!S:S,MATCH($A{r},Rooms!A:A,0)),0)'
+        ws.cell(r, 11).value = f'=IF($A{r}="","",$E{r}-$I{r}-$J{r})'
+        ws.cell(r, 12).value = f'=IF(OR($A{r}="",$D{r}=0),"",$I{r}/$D{r})'
+        ws.cell(r, 13).value = f'=IF(OR($A{r}="",$E{r}=0),"",($I{r}+$J{r})/$E{r})'
+        ws.cell(r, 14).value = f'=IFERROR(INDEX(Rooms!J:J,MATCH($A{r},Rooms!A:A,0)),"")'
+        for c in range(4, 15):
+            ws.cell(r, c).fill = fill(FORMULA_BG)
+            ws.cell(r, c).border = THIN
+            ws.cell(r, c).font = font(10)
+            if c in (5, 6, 7, 8, 9, 10, 11, 12):
+                ws.cell(r, c).number_format = CUR
+            if c == 4:
+                ws.cell(r, c).number_format = DEC1
+            if c == 13:
+                ws.cell(r, c).number_format = PCT1
+    ws.conditional_formatting.add(
+        f"M5:M{max(last, 80)}",
+        ColorScaleRule(
+            start_type="num", start_value=0, start_color=SUCCESS,
+            mid_type="num", mid_value=0.9, mid_color=WARNING,
+            end_type="num", end_value=1.2, end_color=DANGER,
+        ),
+    )
+    return ws, last
+
+
+def build_measurements(wb):
+    W = _imp()
+    headers = E.HEADERS_EXTRA["Measurements Specs"]
+    rows = [r[:] for r in E.MEASUREMENTS]
+    ws, last = W.build_list_sheet(
+        wb, "Measurements Specs", ACCENT,
+        "Field measure  ·  area / perimeter / net area are formulas",
+        headers, rows,
+        [10, 12, 10, 18, 12, 12, 12, 12, 14, 12, 12, 22, 10, 10],
+        last_col=14,
+    )
+    for r in range(5, last + 1):
+        ws.cell(r, 8).value = f'=IF($A{r}="","",IF($F{r}="",$E{r}*$G{r},$E{r}*$F{r}))'
+        ws.cell(r, 9).value = f'=IF(OR($A{r}="",$F{r}=""),"",2*($E{r}+$F{r}))'
+        ws.cell(r, 11).value = f'=IF($A{r}="","",$H{r}-$J{r})'
+        for c in (8, 9, 11):
+            ws.cell(r, c).fill = fill(FORMULA_BG)
+            ws.cell(r, c).border = THIN
+            ws.cell(r, c).font = font(10)
+            ws.cell(r, c).number_format = DEC1
+    return ws, last
+
+
+def build_selection(wb):
+    W = _imp()
+    return W.build_list_sheet(
+        wb, "Material Selection", ACCENT,
+        "Finish board  ·  considering → sampled → approved → installed",
+        E.HEADERS_EXTRA["Material Selection"], E.SELECTIONS,
+        [10, 12, 10, 12, 22, 14, 12, 14, 22, 12, 12, 12, 16, 24, 18],
+        date_cols=[12], money_cols=[10],
+        validations=[("=Sel_Status", "K5:K80")],
+        status_col=11,
+        status_map={
+            "Considering": TEXT_MUTED, "Sampled": INFO, "Approved": SUCCESS,
+            "Rejected": DANGER, "Installed": PRIMARY,
+        },
+    )
+
+
+def build_equipment(wb):
+    W = _imp()
+    return W.build_list_sheet(
+        wb, "Equipment Inventory", INFO,
+        "Owned and rented tools  ·  daily rate used by the usage log",
+        E.HEADERS_EXTRA["Equipment Inventory"], E.EQUIPMENT,
+        [10, 18, 12, 12, 16, 12, 12, 14, 12, 16, 18, 12, 12],
+        date_cols=[12], money_cols=[7, 13],
+        validations=[("=Equip_Status", "H5:H80"), ("=Equip_Condition", "I5:I80")],
+        status_col=8,
+        status_map={"Available": SUCCESS, "In Use": ACCENT, "Maintenance": WARNING, "Retired": TEXT_MUTED},
+    )
+
+
+def build_equip_usage(wb):
+    W = _imp()
+    headers = E.HEADERS_EXTRA["Equipment Usage Log"]
+    rows = [r[:] for r in E.EQUIP_USAGE]
+    ws, last = W.build_list_sheet(
+        wb, "Equipment Usage Log", INFO,
+        "Hours on site  ·  cost = hours/8 × daily rate (owned rate may be 0)",
+        headers, rows,
+        [10, 12, 10, 12, 16, 10, 12, 12, 12, 12, 22],
+        date_cols=[2], money_cols=[7, 8],
+        last_col=11,
+    )
+    for r in range(5, last + 1):
+        ws.cell(r, 7).value = f'=IF($C{r}="","",IFERROR(INDEX(\'Equipment Inventory\'!G:G,MATCH($C{r},\'Equipment Inventory\'!A:A,0)),0))'
+        ws.cell(r, 8).value = f'=IF($A{r}="","",$F{r}/8*$G{r})'
+        ws.cell(r, 7).number_format = CUR
+        ws.cell(r, 8).number_format = CUR
+        ws.cell(r, 7).fill = fill(FORMULA_BG)
+        ws.cell(r, 8).fill = fill(FORMULA_BG)
+        ws.cell(r, 7).border = THIN
+        ws.cell(r, 8).border = THIN
+        ws.cell(r, 7).font = font(10)
+        ws.cell(r, 8).font = font(10)
+    return ws, last
+
+
+def build_equip_maint(wb):
+    W = _imp()
+    headers = E.HEADERS_EXTRA["Equipment Maintenance"]
+    rows = [r[:] for r in E.EQUIP_MAINT]
+    ws, last = W.build_list_sheet(
+        wb, "Equipment Maintenance", INFO,
+        "Tool service  ·  days until due vs AsOfDate",
+        headers, rows,
+        [10, 10, 22, 12, 12, 10, 14, 12, 28, 12],
+        date_cols=[4, 5], money_cols=[6],
+        last_col=10,
+    )
+    for r in range(5, last + 1):
+        ws.cell(r, 10).value = f'=IF(OR($A{r}="",$E{r}=""),"",$E{r}-AsOfDate)'
+        ws.cell(r, 10).fill = fill(FORMULA_BG)
+        ws.cell(r, 10).border = THIN
+        ws.cell(r, 10).font = font(10)
+    ws.conditional_formatting.add(
+        f"J5:J{max(last, 80)}",
+        FormulaRule(formula=["AND(J5<>\"\",J5<=14)"], fill=fill(WARNING_SOFT), font=font(10, True, WARNING)),
+    )
+    return ws, last
+
+
+def build_quality_stds(wb):
+    W = _imp()
+    return W.build_list_sheet(
+        wb, "Quality Standards", SUCCESS,
+        "Spec book  ·  what “done” means on this job",
+        E.HEADERS_EXTRA["Quality Standards"], E.QUALITY_STDS,
+        [10, 12, 40, 12, 22, 14, 16, 24],
+    )
+
+
+def build_snags(wb):
+    W = _imp()
+    headers = E.HEADERS_EXTRA["Defect Snagging List"]
+    rows = [r[:] for r in E.SNAGS]
+    ws, last = W.build_list_sheet(
+        wb, "Defect Snagging List", DANGER,
+        "Punch / snag list  ·  Open Rank feeds the status report (Excel-safe INDEX/MATCH)",
+        headers, rows,
+        [10, 12, 12, 10, 16, 44, 12, 16, 12, 14, 12, 12, 24, 10],
+        date_cols=[2, 9, 12], money_cols=[11],
+        validations=[("=Defect_Severity", "G5:G200"), ("=Defect_Status", "J5:J200")],
+        status_col=10,
+        status_map={
+            "Open": DANGER, "Assigned": WARNING, "In Progress": ACCENT,
+            "Fixed": INFO, "Verified": SUCCESS, "Closed": PRIMARY,
+        },
+        last_col=14,
+    )
+    for r in range(5, last + 1):
+        ws.cell(r, 14).value = (
+            f'=IF(OR($A{r}="",$J{r}="Closed",$C{r}<>ActiveProject),"",'
+            f'COUNTIFS($C$5:$C{r},ActiveProject,$J$5:$J{r},"<>Closed"))'
+        )
+        ws.cell(r, 14).fill = fill(FORMULA_BG)
+        ws.cell(r, 14).border = THIN
+        ws.cell(r, 14).font = font(10)
+    W._status_cf(ws, "G", 5, max(last, 200), {
+        "Critical": DANGER, "Major": ACCENT, "Minor": WARNING, "Cosmetic": INFO,
+    })
+    return ws, last
+
+
+def build_safety(wb):
+    W = _imp()
+    return W.build_list_sheet(
+        wb, "Safety Checklist", DANGER,
+        "Daily / weekly site safety  ·  fail requires a corrective action",
+        E.HEADERS_EXTRA["Safety Checklist"], E.SAFETY,
+        [10, 12, 12, 36, 12, 12, 20, 24, 16, 12, 12],
+        date_cols=[2, 10],
+        validations=[("=Safety_Result", "F5:F200")],
+        status_col=6,
+        status_map={"Pass": SUCCESS, "Fail": DANGER, "N/A": TEXT_MUTED, "Corrected": INFO},
+    )
+
+
+def build_incidents(wb):
+    W = _imp()
+    return W.build_list_sheet(
+        wb, "Incident Accident Log", DANGER,
+        "Near miss through recordable  ·  keep even the small ones",
+        E.HEADERS_EXTRA["Incident Accident Log"], E.INCIDENTS,
+        [10, 12, 12, 16, 16, 44, 14, 22, 16, 12, 12, 18],
+        date_cols=[2],
+        validations=[("=Incident_Type", "D5:D80")],
+        status_col=11,
+        status_map={"Open": DANGER, "Closed": SUCCESS},
+    )
+
+
+def build_invoices(wb):
+    W = _imp()
+    headers = E.HEADERS_EXTRA["Invoice Management"]
+    rows = [r[:] for r in E.INVOICES]
+    ws, last = W.build_list_sheet(
+        wb, "Invoice Management", WARNING,
+        "Client draws  ·  total / balance / aging are formulas",
+        headers, rows,
+        [10, 12, 12, 12, 40, 12, 10, 12, 12, 12, 12, 12, 10],
+        date_cols=[2, 11], money_cols=[6, 7, 8, 9, 10],
+        validations=[("=Invoice_Status", "L5:L80")],
+        status_col=12,
+        status_map={
+            "Draft": TEXT_MUTED, "Sent": INFO, "Partial": WARNING,
+            "Paid": SUCCESS, "Overdue": DANGER, "Void": TEXT_MUTED,
+        },
+        last_col=13,
+    )
+    for r in range(5, last + 1):
+        ws.cell(r, 8).value = f'=IF($A{r}="","",$F{r}+$G{r})'
+        ws.cell(r, 10).value = f'=IF($A{r}="","",$H{r}-$I{r})'
+        ws.cell(r, 13).value = f'=IF($A{r}="","",IF($L{r}="Paid",0,IF($K{r}="","" ,AsOfDate-$K{r})))'
+        for c in (8, 10, 13):
+            ws.cell(r, c).fill = fill(FORMULA_BG)
+            ws.cell(r, c).border = THIN
+            ws.cell(r, c).font = font(10)
+        ws.cell(r, 8).number_format = CUR
+        ws.cell(r, 10).number_format = CUR
+    return ws, last
+
+
+def build_receipts(wb):
+    W = _imp()
+    return W.build_list_sheet(
+        wb, "Payment Receipts", SUCCESS,
+        "Money in  ·  tie each receipt to an invoice",
+        E.HEADERS_EXTRA["Payment Receipts"], E.RECEIPTS,
+        [10, 12, 12, 12, 12, 12, 16, 12, 22],
+        date_cols=[2, 8], money_cols=[5],
+        validations=[("=Payment_Method", "F5:F80")],
+    )
+
+
+def build_income(wb):
+    W = _imp()
+    return W.build_list_sheet(
+        wb, "Income Tracker", SUCCESS,
+        "Client payments and deposits  ·  Planned / Paid  ·  rolls into P&L and cash flow",
+        E.HEADERS_EXTRA["Income Tracker"], E.INCOME,
+        [10, 12, 12, 16, 16, 28, 12, 10, 12, 12, 16],
+        date_cols=[2], money_cols=[7],
+        validations=[("=Income_Type", "D5:D80"), ("=Expense_Status", "I5:I80")],
+        status_col=9,
+        status_map={"Paid": SUCCESS, "Planned": INFO, "Committed": WARNING, "Void": TEXT_MUTED},
+    )
+
+
+def build_pnl(wb):
+    W = _imp()
+    headers = E.HEADERS_EXTRA["Profit Loss Project"]
+    rows = [[p[0], p[2]] + [None] * 8 for p in D.PROJECTS]
+    ws, last = W.build_list_sheet(
+        wb, "Profit Loss Project", SUCCESS,
+        "Income from Income Tracker  ·  costs from paid Expenses  ·  switch nothing — both projects listed",
+        headers, rows,
+        [12, 32, 14, 12, 12, 12, 12, 14, 12, 12],
+        money_cols=[3, 4, 5, 6, 7, 8], pct_cols=[9],
+        last_col=10,
+    )
+    for r in range(5, last + 1):
+        ws.cell(r, 3).value = f'=IF($A{r}="","",SUMIFS(\'Income Tracker\'!G:G,\'Income Tracker\'!C:C,$A{r},\'Income Tracker\'!I:I,"Paid"))'
+        ws.cell(r, 4).value = f'=IF($A{r}="","",SUMIFS(Expenses!H:H,Expenses!C:C,$A{r},Expenses!E:E,"Labor",Expenses!J:J,"Paid"))'
+        ws.cell(r, 5).value = f'=IF($A{r}="","",SUMIFS(Expenses!H:H,Expenses!C:C,$A{r},Expenses!E:E,"Materials",Expenses!J:J,"Paid"))'
+        ws.cell(r, 6).value = (
+            f'=IF($A{r}="","",SUMIFS(Expenses!H:H,Expenses!C:C,$A{r},Expenses!J:J,"Paid")-$D{r}-$E{r})'
+        )
+        ws.cell(r, 7).value = f'=IF($A{r}="","",$D{r}+$E{r}+$F{r})'
+        ws.cell(r, 8).value = f'=IF($A{r}="","",$C{r}-$G{r})'
+        ws.cell(r, 9).value = f'=IF(OR($A{r}="",$C{r}=0),"",$H{r}/$C{r})'
+        ws.cell(r, 10).value = (
+            f'=IF($A{r}="","",IF($H{r}<0,"Loss",IF($I{r}<0.1,"Thin","Healthy")))'
+        )
+        for c in range(3, 11):
+            ws.cell(r, c).fill = fill(FORMULA_BG)
+            ws.cell(r, c).border = THIN
+            ws.cell(r, c).font = font(10)
+            if c <= 8:
+                ws.cell(r, c).number_format = CUR
+            if c == 9:
+                ws.cell(r, c).number_format = PCT1
+    W._status_cf(ws, "J", 5, max(last, 20), {"Healthy": SUCCESS, "Thin": WARNING, "Loss": DANGER})
+    return ws, last
+
+
+def build_cashflow(wb):
+    W = _imp()
+    ws = W._sheet(
+        wb, "Cash Flow Tracker", SUCCESS, 8,
+        "Monthly cash  ·  opening rolls from prior closing  ·  Mar–Dec 2026",
+    )
+    header_row(ws, 4, E.HEADERS_EXTRA["Cash Flow Tracker"])
+    months = [date(2026, m, 1) for m in range(3, 13)]
+    for i, m in enumerate(months):
+        r = 5 + i
+        nxt = date(2026, m.month + 1, 1) if m.month < 12 else date(2027, 1, 1)
+        ws.cell(r, 1, m.strftime("%b %Y"))
+        if i == 0:
+            ws.cell(r, 2, 0)
         else:
-            unlocked += 1
-
-    # Rows 1–4 always locked (banner + headers)
-    for r in range(1, 5):
-        for c in range(1, max_col + 1):
-            set_lock(ws.cell(r, c), True)
-
-    if name in LOCK_ALL:
-        for r in range(5, max_row + 1):
-            for c in range(1, max_col + 1):
-                set_lock(ws.cell(r, c), True)
-        return {"sheet": name, "locked": locked, "unlocked": unlocked, "mode": "lock-all"}
-
-    if name == "Settings":
-        # Column A (setting name) + C (notes) locked; B (value) unlocked
-        for r in range(5, max(max_row, 40) + 1):
-            set_lock(ws.cell(r, 1), True)
-            set_lock(ws.cell(r, 2), False)
-            set_lock(ws.cell(r, 3), True)
-        return {"sheet": name, "locked": locked, "unlocked": unlocked, "mode": "settings"}
-
-    if name == "Lookups":
-        for r in range(5, max(max_row, 80) + 1):
-            for c in range(1, max_col + 1):
-                set_lock(ws.cell(r, c), False)
-        return {"sheet": name, "locked": locked, "unlocked": unlocked, "mode": "lookups"}
-
-    # Registers: lock formula columns + any formula cell; unlock the rest
-    pad_to = max(max_row, INPUT_PAD_TO)
-    for r in range(5, pad_to + 1):
-        for c in range(1, max_col + 1):
-            cell = ws.cell(r, c)
-            lock = c in formula_cols or _is_formula(cell.value)
-            set_lock(cell, lock)
-
-    return {
-        "sheet": name,
-        "locked": locked,
-        "unlocked": unlocked,
-        "mode": "register",
-        "formula_cols": [get_column_letter(c) for c in sorted(formula_cols)],
-    }
+            ws.cell(r, 2, f"=F{r-1}")
+        ws.cell(r, 3).value = (
+            f'=SUMIFS(\'Income Tracker\'!G:G,\'Income Tracker\'!I:I,"Paid",'
+            f'\'Income Tracker\'!B:B,">="&DATE({m.year},{m.month},1),'
+            f'\'Income Tracker\'!B:B,"<"&DATE({nxt.year},{nxt.month},1))'
+        )
+        ws.cell(r, 4).value = (
+            f'=SUMIFS(Expenses!H:H,Expenses!J:J,"Paid",'
+            f'Expenses!B:B,">="&DATE({m.year},{m.month},1),'
+            f'Expenses!B:B,"<"&DATE({nxt.year},{nxt.month},1))'
+        )
+        ws.cell(r, 5).value = f"=C{r}-D{r}"
+        ws.cell(r, 6).value = f"=B{r}+E{r}"
+        ws.cell(r, 7, "As of 24 Aug 2026" if m.month == 8 else "")
+        for c in range(1, 8):
+            ws.cell(r, c).fill = fill(WHITE if i % 2 == 0 else ROW_ALT)
+            ws.cell(r, c).border = THIN
+            ws.cell(r, c).font = font(10)
+            if c >= 2 and c <= 6:
+                ws.cell(r, c).number_format = CUR
+                ws.cell(r, c).fill = fill(FORMULA_BG)
+        ws.cell(r, 2).fill = fill(FORMULA_BG if i else INPUT_BG)
+    last = 4 + len(months)
+    line = LineChart()
+    line.title = "Monthly net cash"
+    data = Reference(ws, min_col=5, min_row=4, max_row=last)
+    cats = Reference(ws, min_col=1, min_row=5, max_row=last)
+    line.add_data(data, titles_from_data=True)
+    line.set_categories(cats)
+    line.width = 16
+    line.height = 7
+    line.y_axis.numFmt = CUR
+    ws.add_chart(line, "A18")
+    set_col_widths(ws, [14, 14, 14, 14, 14, 14, 28])
+    freeze(ws, "A5")
+    return ws
 
 
-def protect_sheet(ws, password: str = SHEET_PASSWORD) -> None:
-    ws.protection.sheet = True
-    ws.protection.password = password
-    ws.protection.enable()
-    ws.protection.autoFilter = True
-    ws.protection.sort = True
-    ws.protection.insertRows = True
-    ws.protection.insertHyperlinks = True
-    ws.protection.deleteRows = False
-    ws.protection.insertColumns = False
-    ws.protection.deleteColumns = False
-    ws.protection.formatCells = False
-    ws.protection.formatColumns = True
-    ws.protection.formatRows = True
-    ws.protection.selectLockedCells = True
-    ws.protection.selectUnlockedCells = True
-    ws.protection.objects = False
-    ws.protection.scenarios = True
-    ws.protection.pivotTables = True
+def build_contracts(wb):
+    W = _imp()
+    return W.build_list_sheet(
+        wb, "Contract Register", PRIMARY,
+        "GC, design, subcontract, supply, change orders  ·  signed flag + retention",
+        E.HEADERS_EXTRA["Contract Register"], E.CONTRACTS,
+        [12, 12, 14, 28, 12, 12, 12, 12, 10, 12, 28, 22],
+        date_cols=[6, 7], money_cols=[5], pct_cols=[10],
+        validations=[("=Contract_Type", "C5:C80"), ("=Contract_Status", "H5:H80")],
+        status_col=8,
+        status_map={
+            "Draft": TEXT_MUTED, "Sent": WARNING, "Signed": INFO,
+            "Active": SUCCESS, "Expired": DANGER, "Closed": PRIMARY,
+        },
+    )
 
 
-def protect_workbook(wb, password: str = SHEET_PASSWORD) -> list:
-    """Lock formulas, protect every sheet, stamp author = premium."""
-    reports = []
-    for ws in wb.worksheets:
-        reports.append(apply_cell_locks(ws))
-        protect_sheet(ws, password)
+def build_after_sales(wb):
+    W = _imp()
+    return W.build_list_sheet(
+        wb, "After-Sales Service", SUCCESS,
+        "Callbacks, warranty claims, handover consults  ·  the job after the job",
+        E.HEADERS_EXTRA["After-Sales Service"], E.AFTER_SALES,
+        [10, 12, 12, 12, 16, 36, 10, 16, 12, 14, 10, 22],
+        date_cols=[2, 9], money_cols=[11],
+        validations=[("=Service_Type", "E5:E80"), ("=Service_Status", "J5:J80"), ("=Priority", "G5:G80")],
+        status_col=10,
+        status_map={
+            "Open": DANGER, "Scheduled": WARNING, "In Progress": ACCENT,
+            "Closed": SUCCESS, "Escalated": ACCENT,
+        },
+    )
 
-    # Do not lock workbook structure — buyers may still add a scratch sheet.
-    wb.security = WorkbookProtection(lockStructure=False, lockWindows=False)
-    wb.properties.creator = AUTHOR
-    wb.properties.lastModifiedBy = AUTHOR
-    wb.properties.keywords = "premium, home renovation, spreadsheet, google sheets"
-    wb.properties.category = "Spreadsheets"
-    return reports
+
+# ---------------------------------------------------------------------------
+# Reports
+# ---------------------------------------------------------------------------
+def build_status_report(wb):
+    W = _imp()
+    ws = W._sheet(
+        wb, "Project Status Report", PRIMARY, 12,
+        "Printable status pack for the active project  ·  follows Settings → Active Project ID",
+    )
+    ws.merge_cells("A4:L4")
+    ws["A4"] = '="PROJECT STATUS  ·  "&IFERROR(INDEX(Projects!C:C,MATCH(ActiveProject,Projects!A:A,0)),ActiveProject)&"  ·  "&TEXT(AsOfDate,"DD MMMM YYYY")'
+    ws["A4"].font = font(16, True, PRIMARY)
+    ws["A4"].fill = fill(BG)
+
+    kpi_card(ws, 6, 1, "PHASE",
+             '=IFERROR(INDEX(Projects!F:F,MATCH(ActiveProject,Projects!A:A,0)),"—")',
+             '=IFERROR(INDEX(Projects!E:E,MATCH(ActiveProject,Projects!A:A,0)),"")', PRIMARY, 2, 3)
+    kpi_card(ws, 6, 4, "PROGRESS",
+             '=IFERROR(INDEX(Projects!P:P,MATCH(ActiveProject,Projects!A:A,0)),0)',
+             "Percent complete", ACCENT, 2, 3)
+    ws["D7"].number_format = PCT
+    kpi_card(ws, 6, 7, "BUDGET / SPENT",
+             '=IFERROR(INDEX(Projects!J:J,MATCH(ActiveProject,Projects!A:A,0)),0)',
+             '=TEXT(SUMIFS(Expenses!H:H,Expenses!C:C,ActiveProject,Expenses!J:J,"Paid"),"$#,##0")&" spent"',
+             PRIMARY, 2, 3)
+    ws["G7"].number_format = CUR
+    kpi_card(ws, 6, 10, "HEALTH",
+             '=IFERROR(INDEX(Projects!U:U,MATCH(ActiveProject,Projects!A:A,0)),"—")',
+             "On Track / Watch / Over", SUCCESS, 2, 3)
+
+    section_label(ws, 10, 1, "OPEN SNAGS (active project)", 6)
+    for i, h in enumerate(["Due", "Room", "Issue", "Severity", "Owner", "Status"], 1):
+        cell = ws.cell(11, i, h)
+        cell.font = font(9, True, WHITE)
+        cell.fill = fill(PRIMARY)
+        cell.border = THIN
+    for i in range(6):
+        r = 12 + i
+        n = i + 1
+        ws.cell(r, 1).value = f"=IFERROR(INDEX('Defect Snagging List'!I:I,MATCH({n},'Defect Snagging List'!N:N,0)),\"\")"
+        ws.cell(r, 1).number_format = DATE
+        ws.cell(r, 2).value = f"=IFERROR(INDEX('Defect Snagging List'!D:D,MATCH({n},'Defect Snagging List'!N:N,0)),\"\")"
+        ws.cell(r, 3).value = f"=IFERROR(INDEX('Defect Snagging List'!F:F,MATCH({n},'Defect Snagging List'!N:N,0)),\"\")"
+        ws.cell(r, 4).value = f"=IFERROR(INDEX('Defect Snagging List'!G:G,MATCH({n},'Defect Snagging List'!N:N,0)),\"\")"
+        ws.cell(r, 5).value = f"=IFERROR(INDEX('Defect Snagging List'!H:H,MATCH({n},'Defect Snagging List'!N:N,0)),\"\")"
+        ws.cell(r, 6).value = f"=IFERROR(INDEX('Defect Snagging List'!J:J,MATCH({n},'Defect Snagging List'!N:N,0)),\"\")"
+        for c in range(1, 7):
+            ws.cell(r, c).fill = fill(WHITE if i % 2 == 0 else ROW_ALT)
+            ws.cell(r, c).border = THIN
+            ws.cell(r, c).font = font(9)
+
+    section_label(ws, 10, 8, "PHASES", 5)
+    for i, h in enumerate(["Phase", "Status", "%", "End"], 8):
+        cell = ws.cell(11, i, h)
+        cell.font = font(9, True, WHITE)
+        cell.fill = fill(PRIMARY)
+        cell.border = THIN
+    for i, ph in enumerate(E.PROJECT_PHASES[:12]):
+        r = 12 + i
+        pid = ph[0]
+        ws.cell(r, 8).value = f'=IFERROR(INDEX(\'Project Phases\'!C:C,MATCH("{pid}",\'Project Phases\'!A:A,0)),"")'
+        ws.cell(r, 9).value = f'=IFERROR(INDEX(\'Project Phases\'!K:K,MATCH("{pid}",\'Project Phases\'!A:A,0)),"")'
+        ws.cell(r, 10).value = f'=IFERROR(INDEX(\'Project Phases\'!J:J,MATCH("{pid}",\'Project Phases\'!A:A,0)),0)'
+        ws.cell(r, 11).value = f'=IFERROR(INDEX(\'Project Phases\'!E:E,MATCH("{pid}",\'Project Phases\'!A:A,0)),"")'
+        ws.cell(r, 10).number_format = PCT
+        ws.cell(r, 11).number_format = DATE
+        for c in range(8, 12):
+            ws.cell(r, c).fill = fill(WHITE if i % 2 == 0 else ROW_ALT)
+            ws.cell(r, c).border = THIN
+            ws.cell(r, c).font = font(9)
+
+    section_label(ws, 25, 1, "COUNTS", 6)
+    stats = [
+        (26, "Open tasks", '=COUNTIFS(Tasks!B:B,ActiveProject,Tasks!H:H,"<>Completed")'),
+        (27, "Overdue tasks", '=COUNTIFS(Tasks!B:B,ActiveProject,Tasks!Q:Q,"Overdue")'),
+        (28, "Open snags", '=COUNTIFS(\'Defect Snagging List\'!C:C,ActiveProject,\'Defect Snagging List\'!J:J,"<>Closed")'),
+        (29, "Safety fails (open)", '=COUNTIFS(\'Safety Checklist\'!C:C,ActiveProject,\'Safety Checklist\'!F:F,"Fail")'),
+        (30, "POs open", '=COUNTIFS(\'Purchase Orders\'!C:C,ActiveProject,\'Purchase Orders\'!E:E,"<>Received",\'Purchase Orders\'!E:E,"<>Closed")'),
+        (31, "Invoices unpaid $", '=SUMIFS(\'Invoice Management\'!J:J,\'Invoice Management\'!D:D,ActiveProject)'),
+    ]
+    for r, label, fml in stats:
+        ws.cell(r, 1, label).font = font(10, True, PRIMARY)
+        ws.cell(r, 2, fml).font = font(10)
+        ws.cell(r, 1).fill = fill(WHITE)
+        ws.cell(r, 2).fill = fill(FORMULA_BG)
+        ws.cell(r, 1).border = THIN
+        ws.cell(r, 2).border = THIN
+        if "unpaid" in label:
+            ws.cell(r, 2).number_format = CUR
+
+    set_col_widths(ws, [18, 12, 36, 12, 16, 12, 14, 22, 14, 10, 12, 12])
+    freeze(ws, "A4")
+    return ws
 
 
-################################################################################
-# FILE: hrms/workbook.py
-################################################################################
+def build_weekly_report(wb):
+    W = _imp()
+    ws = W._sheet(
+        wb, "Weekly Progress Report", PRIMARY_MID, 10,
+        "Week-of view around AsOfDate  ·  reprint every Monday",
+    )
+    ws.merge_cells("A4:J4")
+    ws["A4"] = '="WEEKLY PROGRESS  ·  week of "&TEXT(AsOfDate-WEEKDAY(AsOfDate,2)+1,"DD MMM")&"  ·  "&ActiveProject'
+    ws["A4"].font = font(16, True, PRIMARY)
+    ws["A4"].fill = fill(BG)
 
+    kpi_card(ws, 6, 1, "TASKS CLOSED (all time)",
+             '=COUNTIFS(Tasks!B:B,ActiveProject,Tasks!H:H,"Completed")',
+             "Completed on the register", SUCCESS, 2, 3)
+    kpi_card(ws, 6, 4, "OPEN / OVERDUE",
+             '=COUNTIFS(Tasks!B:B,ActiveProject,Tasks!H:H,"<>Completed")',
+             '=COUNTIFS(Tasks!B:B,ActiveProject,Tasks!Q:Q,"Overdue")&" overdue"',
+             WARNING, 2, 3)
+    kpi_card(ws, 6, 7, "SPENT THIS MONTH",
+             '=SUMIFS(Expenses!H:H,Expenses!C:C,ActiveProject,Expenses!J:J,"Paid",Expenses!B:B,">="&DATE(YEAR(AsOfDate),MONTH(AsOfDate),1),Expenses!B:B,"<"&DATE(YEAR(AsOfDate),MONTH(AsOfDate)+1,1))',
+             "Paid expenses", ACCENT, 2, 3)
+    ws["G7"].number_format = CUR
+
+    section_label(ws, 10, 1, "THIS WEEK ON THE CALENDAR", 6)
+    for i, h in enumerate(["Date", "Time", "Event", "Owner", "Status"], 1):
+        cell = ws.cell(11, i, h)
+        cell.font = font(9, True, WHITE)
+        cell.fill = fill(PRIMARY)
+        cell.border = THIN
+    for i in range(8):
+        r = 12 + i
+        n = i + 1
+        ws.cell(r, 1).value = f"=IFERROR(INDEX(Calendar!A:A,MATCH({n},Calendar!H:H,0)),\"\")"
+        ws.cell(r, 1).number_format = DATE
+        ws.cell(r, 2).value = f"=IFERROR(INDEX(Calendar!B:B,MATCH({n},Calendar!H:H,0)),\"\")"
+        ws.cell(r, 3).value = f"=IFERROR(INDEX(Calendar!C:C,MATCH({n},Calendar!H:H,0)),\"\")"
+        ws.cell(r, 4).value = f"=IFERROR(INDEX(Calendar!F:F,MATCH({n},Calendar!H:H,0)),\"\")"
+        ws.cell(r, 5).value = f"=IFERROR(INDEX(Calendar!G:G,MATCH({n},Calendar!H:H,0)),\"\")"
+        for c in range(1, 6):
+            ws.cell(r, c).fill = fill(WHITE if i % 2 == 0 else ROW_ALT)
+            ws.cell(r, c).border = THIN
+            ws.cell(r, c).font = font(9)
+
+    section_label(ws, 10, 7, "ATTENDANCE THIS WEEK (sample)", 4)
+    ws["G11"] = "Present days"
+    ws["H11"] = '=COUNTIF(\'Worker Attendance\'!E:E,"Present")+COUNTIF(\'Worker Attendance\'!E:E,"Overtime")'
+    ws["G12"] = "Total entries"
+    ws["H12"] = '=COUNTA(\'Worker Attendance\'!A5:A200)'
+    ws["G13"] = "Labor $ (calc)"
+    ws["H13"] = "=SUM('Labor Cost Calc'!O:O)"
+    ws["H13"].number_format = CUR
+    for r in range(11, 14):
+        ws.cell(r, 7).font = font(10, True, PRIMARY)
+        ws.cell(r, 7).fill = fill(WHITE)
+        ws.cell(r, 8).fill = fill(FORMULA_BG)
+        ws.cell(r, 7).border = THIN
+        ws.cell(r, 8).border = THIN
+
+    section_label(ws, 22, 1, "NARRATIVE (type here — unlocked on this report if you unprotect)", 8)
+    ws.merge_cells("A23:J26")
+    ws["A23"] = (
+        "Maplewood week of 24 Aug 2026: cabinet boxes continue; floor finish Tuesday; "
+        "bath punch (haze) Thursday; hardware still in transit so doors wait. "
+        "Contingency is under 10% — water feature stays on hold. Cabin Japandi board out for a decision."
+    )
+    ws["A23"].alignment = align("left", "top", True)
+    ws["A23"].fill = fill(WHITE)
+    ws["A23"].font = font(11)
+
+    set_col_widths(ws, [16, 12, 28, 16, 12, 12, 22, 16, 12, 12])
+    freeze(ws, "A4")
+    return ws
+
+
+def build_kpi_dashboard(wb):
+    W = _imp()
+    ws = W._sheet(
+        wb, "KPI Dashboard", PRIMARY, 12,
+        "Portfolio construction KPIs  ·  all projects unless noted",
+    )
+    cards = [
+        (5, 1, "ACTIVE PROJECTS", '=COUNTIF(Projects!E:E,"Active")', "Status = Active", PRIMARY),
+        (5, 4, "PORTFOLIO BUDGET", "=SUM(Projects!J:J)", "All projects", ACCENT),
+        (5, 7, "CASH IN (PAID)", '=SUMIF(\'Income Tracker\'!I:I,"Paid",\'Income Tracker\'!G:G)', "Income Tracker", SUCCESS),
+        (5, 10, "CASH OUT (PAID)", '=SUMIF(Expenses!J:J,"Paid",Expenses!H:H)', "Expenses", WARNING),
+        (9, 1, "OPEN SNAGS", '=COUNTIFS(\'Defect Snagging List\'!J:J,"<>Closed",\'Defect Snagging List\'!A:A,"<>")-1', "Not closed", DANGER),
+        (9, 4, "SAFETY FAILS", '=COUNTIF(\'Safety Checklist\'!F:F,"Fail")', "Need correction", DANGER),
+        (9, 7, "OVERDUE TASKS", '=COUNTIF(Tasks!Q:Q,"Overdue")', "All projects", WARNING),
+        (9, 10, "AR BALANCE", '=SUM(\'Invoice Management\'!J:J)', "Unpaid invoices", ACCENT),
+        (13, 1, "CREW PRESENT", '=COUNTIF(\'Worker Attendance\'!E:E,"Present")', "Attendance rows", SUCCESS),
+        (13, 4, "EQUIP IN USE", '=COUNTIF(\'Equipment Inventory\'!H:H,"In Use")', "On a job", INFO),
+        (13, 7, "OPEN POs", '=COUNTIFS(\'Purchase Orders\'!E:E,"<>Received",\'Purchase Orders\'!E:E,"<>Closed",\'Purchase Orders\'!A:A,"<>")-1', "Not received", WARNING),
+        (13, 10, "AVG SATISFACTION", '=AVERAGE(\'Client Satisfaction\'!G:G)', "Overall 1–5", SUCCESS),
+    ]
+    for r, c, label, val, sub, color in cards:
+        mid = kpi_card(ws, r, c, label, val, sub, color, 2, 3)
+        if any(k in label for k in ("BUDGET", "CASH", "AR ")):
+            mid.number_format = CUR
+        if "SATISFACTION" in label:
+            mid.number_format = "0.0"
+
+    section_label(ws, 17, 1, "PROJECT MARGIN", 6)
+    for i, h in enumerate(["Project", "Income", "Cost", "Profit", "Margin"], 1):
+        cell = ws.cell(18, i, h)
+        cell.font = font(9, True, WHITE)
+        cell.fill = fill(PRIMARY)
+        cell.border = THIN
+    for i, p in enumerate(D.PROJECTS):
+        r = 19 + i
+        pid = p[0]
+        ws.cell(r, 1).value = f'=IFERROR(INDEX(\'Profit Loss Project\'!B:B,MATCH("{pid}",\'Profit Loss Project\'!A:A,0)),"")'
+        ws.cell(r, 2).value = f'=IFERROR(INDEX(\'Profit Loss Project\'!C:C,MATCH("{pid}",\'Profit Loss Project\'!A:A,0)),0)'
+        ws.cell(r, 3).value = f'=IFERROR(INDEX(\'Profit Loss Project\'!G:G,MATCH("{pid}",\'Profit Loss Project\'!A:A,0)),0)'
+        ws.cell(r, 4).value = f'=IFERROR(INDEX(\'Profit Loss Project\'!H:H,MATCH("{pid}",\'Profit Loss Project\'!A:A,0)),0)'
+        ws.cell(r, 5).value = f'=IFERROR(INDEX(\'Profit Loss Project\'!I:I,MATCH("{pid}",\'Profit Loss Project\'!A:A,0)),0)'
+        for c in range(2, 5):
+            ws.cell(r, c).number_format = CUR
+        ws.cell(r, 5).number_format = PCT1
+        for c in range(1, 6):
+            ws.cell(r, c).fill = fill(WHITE if i % 2 == 0 else ROW_ALT)
+            ws.cell(r, c).border = THIN
+            ws.cell(r, c).font = font(10)
+
+    bar = BarChart()
+    bar.type = "col"
+    bar.grouping = "clustered"
+    bar.title = "Income vs cost"
+    data = Reference(ws, min_col=2, min_row=18, max_col=3, max_row=18 + len(D.PROJECTS))
+    cats = Reference(ws, min_col=1, min_row=19, max_row=18 + len(D.PROJECTS))
+    bar.add_data(data, titles_from_data=True)
+    bar.set_categories(cats)
+    bar.width = 14
+    bar.height = 7
+    bar.y_axis.numFmt = CUR
+    ws.add_chart(bar, "G18")
+
+    set_col_widths(ws, [28, 14, 14, 14, 12, 12, 16, 14, 12, 14, 12, 12])
+    freeze(ws, "A4")
+    return ws
+
+
+def build_all(wb):
+    """Create every new ERP sheet. Call after the original registers exist."""
+    build_module_hub(wb)
+    build_project_phases(wb)
+    build_gantt_chart(wb)
+    build_clients(wb)
+    build_client_comms(wb)
+    build_satisfaction(wb)
+    build_performance(wb)
+    build_estimates(wb)
+    build_purchase_orders(wb)
+    build_stock(wb)
+    build_workers(wb)
+    build_attendance(wb)
+    build_labor_cost(wb)
+    build_productivity(wb)
+    build_room_checks(wb)
+    build_room_costs(wb)
+    build_measurements(wb)
+    build_selection(wb)
+    build_equipment(wb)
+    build_equip_usage(wb)
+    build_equip_maint(wb)
+    build_quality_stds(wb)
+    build_snags(wb)
+    build_safety(wb)
+    build_incidents(wb)
+    build_invoices(wb)
+    build_receipts(wb)
+    build_income(wb)
+    build_pnl(wb)
+    build_cashflow(wb)
+    build_contracts(wb)
+    build_after_sales(wb)
+    build_status_report(wb)
+    build_weekly_report(wb)
+    build_kpi_dashboard(wb)
+
+
+SHEET_ORDER = [
+    "Start Here", "Module Hub", "Dashboard", "KPI Dashboard",
+    "Projects", "Project Phases", "Tasks", "Gantt Chart", "Timeline",
+    "Client Master Data", "Client Communication", "Client Satisfaction", "Messages",
+    "Budget", "Expenses", "Finance", "Change Orders",
+    "Income Tracker", "Profit Loss Project", "Cash Flow Tracker",
+    "Contractors", "Suppliers", "Contractor Performance", "Payments",
+    "Materials", "Material Estimation", "Purchase Orders", "Material Inventory", "Shopping List",
+    "Worker Master Data", "Worker Attendance", "Labor Cost Calc", "Productivity Tracker", "Jobs",
+    "Rooms", "Room Work Checklist", "Room Cost Summary",
+    "Design Studio", "Measurements Specs", "Material Selection", "AI Insights",
+    "Equipment Inventory", "Equipment Usage Log", "Equipment Maintenance",
+    "Quality Standards", "Inspections", "Defect Snagging List",
+    "Safety Checklist", "Incident Accident Log", "Permits",
+    "Quotes", "Invoice Management", "Payment Receipts",
+    "Documents", "Contract Register",
+    "Warranties", "After-Sales Service",
+    "Inventory", "Maintenance", "Calendar", "Notifications",
+    "Project Status Report", "Weekly Progress Report", "Admin",
+    "Users", "Properties", "Roles & Permissions",
+    "Settings", "Lookups", "Audit Log",
+]
+
+===== hrms/workbook.py =====
 """Build the Home Renovation Management System workbook.
 
 Sheets are Excel- and Google-Sheets-compatible: no VBA, no structured table
@@ -1830,7 +3518,7 @@ def _link(cell, target, text=None):
 # LOOKUPS
 # ===========================================================================
 def build_lookups(wb):
-    ws = _sheet(wb, "Lookups", PRIMARY_SOFT, 28, "Dropdown sources  ·  do not delete  ·  add values downward")
+    ws = _sheet(wb, "Lookups", PRIMARY_SOFT, 56, "Dropdown sources  ·  do not delete  ·  add values downward")
     col = 1
     named = {}
     for name, values in D.LOOKUPS.items():
@@ -2095,11 +3783,12 @@ def build_design(wb):
 
 
 def build_ai(wb):
+    rows = [r + [None] for r in D.AI_INSIGHTS]
     ws, last = build_list_sheet(
         wb, "AI Insights", INFO,
         "Renovation assistant  ·  budget, materials, schedule, contractor comparison, photo analysis",
-        D.HEADERS["AI Insights"], D.AI_INSIGHTS,
-        [12, 12, 12, 10, 14, 12, 56, 64, 14, 14, 36],
+        D.HEADERS["AI Insights"], rows,
+        [12, 12, 12, 10, 14, 12, 56, 64, 14, 14, 36, 12],
         date_cols=[2], money_cols=[9],
         validations=[
             ("=Insight_Severity", "F5:F80"),
@@ -2107,10 +3796,18 @@ def build_ai(wb):
         ],
         status_col=6,
         status_map={"Info": INFO, "Opportunity": SUCCESS, "Warning": WARNING, "Critical": DANGER},
+        last_col=12,
     )
     _status_cf(ws, "J", 5, max(last, 80), {
         "New": INFO, "Accepted": SUCCESS, "In Progress": ACCENT, "Dismissed": TEXT_MUTED, "Resolved": PRIMARY,
     })
+    for r in range(5, last + 1):
+        ws.cell(r, 12).value = (
+            f'=IF(AND($C{r}=ActiveProject,OR($J{r}="New",$J{r}="In Progress")),1,0)'
+        )
+        ws.cell(r, 12).fill = fill(FORMULA_BG)
+        ws.cell(r, 12).border = THIN
+        ws.cell(r, 12).font = font(10)
     return ws, last
 
 
@@ -2182,11 +3879,12 @@ def build_budget(wb):
 
 
 def build_expenses(wb):
+    rows = [r + [None] for r in D.EXPENSES]
     ws, last = build_list_sheet(
         wb, "Expenses", ACCENT,
         "Every dollar  ·  Planned / Committed / Paid  ·  add rows below, keep Status valid",
-        D.HEADERS["Expenses"], D.EXPENSES,
-        [12, 12, 12, 10, 14, 24, 36, 12, 14, 12, 16, 16],
+        D.HEADERS["Expenses"], rows,
+        [12, 12, 12, 10, 14, 24, 36, 12, 14, 12, 16, 16, 12],
         date_cols=[2], money_cols=[8],
         validations=[
             ("=Budget_Category", "E5:E500"),
@@ -2195,8 +3893,13 @@ def build_expenses(wb):
         ],
         status_col=10,
         status_map={"Paid": SUCCESS, "Committed": WARNING, "Planned": INFO, "Void": TEXT_MUTED},
+        last_col=13,
     )
-    # highlight amount
+    for r in range(5, last + 1):
+        ws.cell(r, 13).value = f'=IF($C{r}=ActiveProject,COUNTIF($C$5:$C{r},ActiveProject),"")'
+        ws.cell(r, 13).fill = fill(FORMULA_BG)
+        ws.cell(r, 13).border = THIN
+        ws.cell(r, 13).font = font(10)
     ws.conditional_formatting.add(
         f"H5:H{max(last, 200)}",
         ColorScaleRule(start_type="min", start_color="F8F6F1",
@@ -2280,20 +3983,6 @@ def build_finance(wb):
         cell.fill = fill(PRIMARY)
         cell.alignment = align("center", "center")
         cell.border = THIN
-    # pull first 12 rooms of active project via INDEX/MATCH is hard; list known rooms with SUMIF
-    # Use Rooms sheet
-    for i in range(12):
-        r = 15 + i
-        # Room name from Rooms where project = active, nth match approximated by listing Rooms!C
-        ws.cell(r, 8, f'=IFERROR(INDEX(Rooms!$C:$C,SMALL(IF(Rooms!$B$5:$B$80=ActiveProject,ROW(Rooms!$B$5:$B$80)),{i+1})),"")')
-        # Array formulas don't work the same in Excel without CSE; Google Sheets uses ARRAYFORMULA.
-        # Safer: reference Rooms rows directly (rooms 5-16 are PRJ-001 mostly).
-        # We'll fill static room IDs from data for reliability, formulas for money.
-    # overwrite with reliable formulas using Rooms columns
-    for i, room in enumerate(D.ROOMS):
-        if room[1] != "PRJ-001":
-            continue
-        # find display index among PRJ-001
     prj_rooms = [rm for rm in D.ROOMS if rm[1] == "PRJ-001"]
     for i, rm in enumerate(prj_rooms):
         r = 15 + i
@@ -2489,12 +4178,12 @@ def build_jobs(wb):
 # ===========================================================================
 def build_tasks(wb):
     headers = D.HEADERS["Tasks"]
-    rows = [r + [None, None] for r in D.TASKS]
+    rows = [r + [None, None, None] for r in D.TASKS]
     ws, last = build_list_sheet(
         wb, "Tasks", ACCENT,
         "Kanban fields  ·  To Do → Scheduled → In Progress → Inspection → Completed",
         headers, rows,
-        [12, 12, 10, 28, 40, 16, 18, 14, 10, 12, 12, 10, 12, 10, 28, 10, 12],
+        [12, 12, 10, 28, 40, 16, 18, 14, 10, 12, 12, 10, 12, 10, 28, 10, 12, 12],
         date_cols=[10, 11], money_cols=[12], pct_cols=[14],
         validations=[
             ("=Task_Status", "H5:H200"),
@@ -2506,7 +4195,7 @@ def build_tasks(wb):
             "To Do": TEXT_MUTED, "Scheduled": WARNING, "In Progress": ACCENT,
             "Inspection": INFO, "Completed": SUCCESS, "Blocked": DANGER,
         },
-        last_col=17,
+        last_col=18,
     )
     for r in range(5, last + 1):
         ws.cell(r, 16).value = f'=IF(OR($A{r}="",$K{r}=""),"", $K{r}-AsOfDate)'
@@ -2515,12 +4204,19 @@ def build_tasks(wb):
             f'IF($K{r}<AsOfDate,"Overdue",'
             f'IF($K{r}<=AsOfDate+7,"Due Soon","On Track"))))'
         )
+        ws.cell(r, 18).value = (
+            f'=IF(OR($A{r}="",$H{r}="Completed",$B{r}<>ActiveProject),"",'
+            f'COUNTIFS($B$5:$B{r},ActiveProject,$H$5:$H{r},"<>Completed"))'
+        )
         ws.cell(r, 16).fill = fill(FORMULA_BG)
         ws.cell(r, 17).fill = fill(FORMULA_BG)
+        ws.cell(r, 18).fill = fill(FORMULA_BG)
         ws.cell(r, 16).border = THIN
         ws.cell(r, 17).border = THIN
+        ws.cell(r, 18).border = THIN
         ws.cell(r, 16).font = font(10)
         ws.cell(r, 17).font = font(10)
+        ws.cell(r, 18).font = font(10)
         ws.cell(r, 16).alignment = align("center", "center")
         ws.cell(r, 17).alignment = align("center", "center")
     _status_cf(ws, "Q", 5, max(last, 200), {
@@ -2618,13 +4314,13 @@ def build_timeline(wb):
 # ===========================================================================
 def build_materials(wb):
     headers = D.HEADERS["Materials"]
-    # Source has no Line Total (col 11) or Open Qty (col 22) — both are formulas.
-    rows = [r[:10] + [None] + r[10:] + [None] for r in D.MATERIALS]
+    # Source has no Line Total (col 11), Open Qty (col 22), or Shop Rank (col 23).
+    rows = [r[:10] + [None] + r[10:] + [None, None] for r in D.MATERIALS]
     ws, last = build_list_sheet(
         wb, "Materials", WARNING,
         "Procurement  ·  Required → Quoted → Approved → Ordered → Shipped → Delivered → Installed",
         headers, rows,
-        [12, 12, 10, 28, 16, 14, 12, 12, 8, 12, 12, 22, 12, 12, 12, 12, 12, 14, 12, 12, 14, 10],
+        [12, 12, 10, 28, 16, 14, 12, 12, 8, 12, 12, 22, 12, 12, 12, 12, 12, 14, 12, 12, 14, 10, 12],
         date_cols=[19, 20], money_cols=[10, 11],
         validations=[("=Material_Status", "P5:P200")],
         status_col=16,
@@ -2633,18 +4329,25 @@ def build_materials(wb):
             "Shipped": ACCENT, "Delivered": INFO, "Installed": SUCCESS,
             "Returned": DANGER, "Backordered": DANGER,
         },
-        last_col=22,
+        last_col=23,
     )
     for r in range(5, last + 1):
         ws.cell(r, 11).value = f'=IF($A{r}="","",$H{r}*$J{r})'
         ws.cell(r, 11).number_format = CUR
         ws.cell(r, 22).value = f'=IF($A{r}="","",$H{r}-$N{r})'
+        ws.cell(r, 23).value = (
+            f'=IF(OR($P{r}="Required",$P{r}="Quoted",$P{r}="Approved"),'
+            f'COUNTIF($P$5:$P{r},"Required")+COUNTIF($P$5:$P{r},"Quoted")+COUNTIF($P$5:$P{r},"Approved"),"")'
+        )
         ws.cell(r, 11).fill = fill(FORMULA_BG)
         ws.cell(r, 22).fill = fill(FORMULA_BG)
+        ws.cell(r, 23).fill = fill(FORMULA_BG)
         ws.cell(r, 11).border = THIN
         ws.cell(r, 22).border = THIN
+        ws.cell(r, 23).border = THIN
         ws.cell(r, 11).font = font(10)
         ws.cell(r, 22).font = font(10)
+        ws.cell(r, 23).font = font(10)
     return ws, last
 
 
@@ -2659,44 +4362,32 @@ def build_suppliers(wb):
 
 def build_shopping(wb):
     ws = _sheet(wb, "Shopping List", ACCENT, 10,
-                "Auto-built from Materials still Required / Quoted / Approved  ·  refresh by editing Materials")
+                "Items still Required / Quoted / Approved  ·  INDEX/MATCH on Materials Shop Rank (Excel-safe)")
     headers = ["SKU / QR", "Product", "Room", "Qty", "Unit", "Est. Unit $", "Est. Total", "Supplier", "Status", "Project"]
     header_row(ws, 4, headers)
-    # FILTER is supported in Excel 365 and Google Sheets. Provide a compatible INDEX/SMALL fallback
-    # plus a FILTER formula in a note. We'll generate a static-looking live list with INDEX/SMALL.
-    for i in range(25):
+    cols = [
+        (1, "Materials!$F:$F"),
+        (2, "Materials!$D:$D"),
+        (3, "Materials!$C:$C"),
+        (4, "Materials!$H:$H"),
+        (5, "Materials!$I:$I"),
+        (6, "Materials!$J:$J"),
+        (7, "Materials!$K:$K"),
+        (8, "Materials!$L:$L"),
+        (9, "Materials!$P:$P"),
+        (10, "Materials!$B:$B"),
+    ]
+    for i in range(20):
         r = 5 + i
-        # nth material whose status is Required/Quoted/Approved
-        ws.cell(r, 10).value = (
-            f'=IFERROR(INDEX(Materials!$B:$B,SMALL(IF((Materials!$P$5:$P$200="Required")+(Materials!$P$5:$P$200="Quoted")+(Materials!$P$5:$P$200="Approved"),ROW(Materials!$P$5:$P$200)),{i+1})),"")'
-        )
-        # Array formulas: Excel 365 and Google Sheets both calculate these as dynamic arrays if entered.
-        # To maximize compatibility, also write a Google-friendly FILTER block starting at row 32.
-        for c in range(1, 11):
+        n = i + 1
+        for c, src in cols:
+            ws.cell(r, c).value = f'=IFERROR(INDEX({src},MATCH({n},Materials!$W:$W,0)),"")'
             ws.cell(r, c).fill = fill(WHITE if i % 2 == 0 else ROW_ALT)
             ws.cell(r, c).border = THIN
             ws.cell(r, c).font = font(10)
-    # Simpler reliable approach: use helper column already on Materials? 
-    # We'll put FILTER formula for Google Sheets / Excel 365 in A5 as a spilled range instruction.
-    # Clear the INDEX formulas and use FILTER (works in both modern Excel and Sheets).
-    for r in range(5, 30):
-        for c in range(1, 11):
-            ws.cell(r, c).value = None
-    # Place FILTER formulas in row 5 (spill). Google Sheets and Excel 365 support FILTER.
-    ws["A5"] = '=IFERROR(FILTER(Materials!F5:F200,(Materials!P5:P200="Required")+(Materials!P5:P200="Quoted")+(Materials!P5:P200="Approved")),"")'
-    ws["B5"] = '=IFERROR(FILTER(Materials!D5:D200,(Materials!P5:P200="Required")+(Materials!P5:P200="Quoted")+(Materials!P5:P200="Approved")),"")'
-    ws["C5"] = '=IFERROR(FILTER(Materials!C5:C200,(Materials!P5:P200="Required")+(Materials!P5:P200="Quoted")+(Materials!P5:P200="Approved")),"")'
-    ws["D5"] = '=IFERROR(FILTER(Materials!H5:H200,(Materials!P5:P200="Required")+(Materials!P5:P200="Quoted")+(Materials!P5:P200="Approved")),"")'
-    ws["E5"] = '=IFERROR(FILTER(Materials!I5:I200,(Materials!P5:P200="Required")+(Materials!P5:P200="Quoted")+(Materials!P5:P200="Approved")),"")'
-    ws["F5"] = '=IFERROR(FILTER(Materials!J5:J200,(Materials!P5:P200="Required")+(Materials!P5:P200="Quoted")+(Materials!P5:P200="Approved")),"")'
-    ws["G5"] = '=IFERROR(FILTER(Materials!K5:K200,(Materials!P5:P200="Required")+(Materials!P5:P200="Quoted")+(Materials!P5:P200="Approved")),"")'
-    ws["H5"] = '=IFERROR(FILTER(Materials!L5:L200,(Materials!P5:P200="Required")+(Materials!P5:P200="Quoted")+(Materials!P5:P200="Approved")),"")'
-    ws["I5"] = '=IFERROR(FILTER(Materials!P5:P200,(Materials!P5:P200="Required")+(Materials!P5:P200="Quoted")+(Materials!P5:P200="Approved")),"")'
-    ws["J5"] = '=IFERROR(FILTER(Materials!B5:B200,(Materials!P5:P200="Required")+(Materials!P5:P200="Quoted")+(Materials!P5:P200="Approved")),"")'
-    for c in range(1, 11):
-        ws.cell(5, c).fill = fill(INPUT_BG)
-        ws.cell(5, c).font = font(10)
-    input_note(ws, 32, 1, "Excel 365 and Google Sheets will spill the shopping list from row 5. If you are on Excel 2019 or earlier, filter the Materials sheet for Status = Required / Quoted / Approved and copy those rows here.", 10)
+        ws.cell(r, 6).number_format = CUR
+        ws.cell(r, 7).number_format = CUR
+    input_note(ws, 26, 1, "Rows pull from Materials where Shop Rank is 1, 2, 3... (status Required, Quoted, or Approved). Add materials on the Materials sheet; this list updates automatically.", 10)
     set_col_widths(ws, [14, 32, 12, 10, 8, 12, 12, 24, 12, 12])
     freeze(ws, "A5")
     return ws
@@ -2933,18 +4624,26 @@ def build_audit(wb):
 
 
 def build_calendar(wb):
-    return build_list_sheet(
+    rows = [r + [None] for r in D.CALENDAR]
+    ws, last = build_list_sheet(
         wb, "Calendar", PRIMARY_MID,
         "Visits, deliveries, inspections, reminders  ·  also subscribe via the Apps Script",
-        D.HEADERS["Calendar"], D.CALENDAR,
-        [12, 10, 22, 18, 48, 16, 12],
+        D.HEADERS["Calendar"], rows,
+        [12, 10, 22, 18, 48, 16, 12, 12],
         date_cols=[1],
         status_col=7,
         status_map={
             "Scheduled": SUCCESS, "To Do": INFO, "Due Soon": WARNING,
             "Watch": ACCENT, "Hold": DANGER, "Upcoming": TEXT_MUTED,
         },
+        last_col=8,
     )
+    for r in range(5, last + 1):
+        ws.cell(r, 8).value = f'=IF($A{r}>=AsOfDate,COUNTIF($A$5:$A{r},">="&AsOfDate),"")'
+        ws.cell(r, 8).fill = fill(FORMULA_BG)
+        ws.cell(r, 8).border = THIN
+        ws.cell(r, 8).font = font(10)
+    return ws, last
 
 
 # ===========================================================================
@@ -2968,7 +4667,7 @@ def build_dashboard(wb):
     # Progress bar (formula text)
     kpi_card(ws, 7, 1, "PROGRESS",
              '=IFERROR(INDEX(Projects!P:P,MATCH(ActiveProject,Projects!A:A,0)),0)',
-             '=REPT("█",ROUND(A8*20,0))&REPT("░",20-ROUND(A8*20,0))',
+             '=REPT("#",ROUND(A8*20,0))&REPT(".",20-ROUND(A8*20,0))',
              ACCENT, 3, 3)
     ws["A8"].number_format = PCT
     kpi_card(ws, 7, 5, "PHASE",
@@ -3002,13 +4701,13 @@ def build_dashboard(wb):
     # Attention / alerts
     section_label(ws, 15, 1, "ATTENTION", 6)
     attention = [
-        (16, '=IF((K8+A12)>H8,"⚠ Project is over the planned budget.","")'),
-        (17, '=IF(Finance!D10<H8*ContingencyFloor,"🔴 Contingency has fallen below 10%. Freeze non-critical extras.","")'),
-        (18, '=IF(COUNTIFS(Tasks!B:B,ActiveProject,Tasks!Q:Q,"Overdue")>0,"⚠ "&COUNTIFS(Tasks!B:B,ActiveProject,Tasks!Q:Q,"Overdue")&" overdue task(s).","")'),
-        (19, '=IF(COUNTIFS(Materials!B:B,ActiveProject,Materials!P:P,"Backordered")>0,"⚠ Material backorder: "&COUNTIFS(Materials!B:B,ActiveProject,Materials!P:P,"Backordered")&" line(s).","")'),
-        (20, '=IF(COUNTIFS(Documents!B:B,ActiveProject,Documents!N:N,"Expiring")+COUNTIFS(Documents!B:B,ActiveProject,Documents!N:N,"Expired")>0,"⚠ Document expiry needs attention.","")'),
-        (21, '=IF(COUNTIFS(\'Change Orders\'!B:B,ActiveProject,\'Change Orders\'!I:I,"Submitted")>0,"⚠ Change order awaiting approval.","")'),
-        (22, '=IF(COUNTA(A16:A21)=0,"🟢 Nothing urgent. You\'re clear for the week.","")'),
+        (16, '=IF((K8+A12)>H8,"ALERT: Project is over the planned budget.","")'),
+        (17, '=IF(Finance!D10<H8*ContingencyFloor,"ALERT: Contingency has fallen below 10%. Freeze non-critical extras.","")'),
+        (18, '=IF(COUNTIFS(Tasks!B:B,ActiveProject,Tasks!Q:Q,"Overdue")>0,"ALERT: "&COUNTIFS(Tasks!B:B,ActiveProject,Tasks!Q:Q,"Overdue")&" overdue task(s).","")'),
+        (19, '=IF(COUNTIFS(Materials!B:B,ActiveProject,Materials!P:P,"Backordered")>0,"ALERT: Material backorder: "&COUNTIFS(Materials!B:B,ActiveProject,Materials!P:P,"Backordered")&" line(s).","")'),
+        (20, '=IF(COUNTIFS(Documents!B:B,ActiveProject,Documents!N:N,"Expiring")+COUNTIFS(Documents!B:B,ActiveProject,Documents!N:N,"Expired")>0,"ALERT: Document expiry needs attention.","")'),
+        (21, '=IF(COUNTIFS(\'Change Orders\'!B:B,ActiveProject,\'Change Orders\'!I:I,"Submitted")>0,"ALERT: Change order awaiting approval.","")'),
+        (22, '=IF(COUNTIF(A16:A21,"ALERT*")=0,"OK: Nothing urgent. You are clear for the week.","")'),
     ]
     for r, fml in attention:
         ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=6)
@@ -3027,18 +4726,20 @@ def build_dashboard(wb):
         cell.fill = fill(PRIMARY)
         cell.alignment = align("center", "center")
         cell.border = THIN
-    # Pull 6 soonest open tasks with FILTER (Excel 365 / Sheets)
-    # Fallback: list known upcoming from Tasks via INDEX on deadline
-    # We'll place FILTER spilled formulas
-    ws["H17"] = '=IFERROR(FILTER(Tasks!K5:K200,(Tasks!B5:B200=ActiveProject)*(Tasks!H5:H200<>"Completed")),"")'
-    ws["I17"] = '=IFERROR(FILTER(Tasks!D5:D200,(Tasks!B5:B200=ActiveProject)*(Tasks!H5:H200<>"Completed")),"")'
-    ws["J17"] = '=IFERROR(FILTER(Tasks!C5:C200,(Tasks!B5:B200=ActiveProject)*(Tasks!H5:H200<>"Completed")),"")'
-    ws["K17"] = '=IFERROR(FILTER(Tasks!F5:F200,(Tasks!B5:B200=ActiveProject)*(Tasks!H5:H200<>"Completed")),"")'
-    ws["L17"] = '=IFERROR(FILTER(Tasks!H5:H200,(Tasks!B5:B200=ActiveProject)*(Tasks!H5:H200<>"Completed")),"")'
-    ws["H17"].number_format = DATE
-    for c in range(8, 13):
-        ws.cell(17, c).fill = fill(WHITE)
-        ws.cell(17, c).font = font(9)
+    # Five ranked open tasks via INDEX/MATCH on Tasks Dash Rank (no FILTER / no spill).
+    for i in range(5):
+        r = 17 + i
+        n = i + 1
+        ws.cell(r, 8).value = f'=IFERROR(INDEX(Tasks!K:K,MATCH({n},Tasks!R:R,0)),"")'
+        ws.cell(r, 8).number_format = DATE
+        ws.cell(r, 9).value = f'=IFERROR(INDEX(Tasks!D:D,MATCH({n},Tasks!R:R,0)),"")'
+        ws.cell(r, 10).value = f'=IFERROR(INDEX(Tasks!C:C,MATCH({n},Tasks!R:R,0)),"")'
+        ws.cell(r, 11).value = f'=IFERROR(INDEX(Tasks!F:F,MATCH({n},Tasks!R:R,0)),"")'
+        ws.cell(r, 12).value = f'=IFERROR(INDEX(Tasks!H:H,MATCH({n},Tasks!R:R,0)),"")'
+        for c in range(8, 13):
+            ws.cell(r, c).fill = fill(WHITE if i % 2 == 0 else ROW_ALT)
+            ws.cell(r, c).font = font(9)
+            ws.cell(r, c).border = THIN
 
     # Recent expenses
     section_label(ws, 24, 1, "RECENT EXPENSES", 6)
@@ -3048,14 +4749,20 @@ def build_dashboard(wb):
         cell.font = font(9, True, WHITE)
         cell.fill = fill(PRIMARY)
         cell.border = THIN
-    # last 8 expenses for active project via FILTER
-    ws["A26"] = '=IFERROR(FILTER(Expenses!B5:B200,Expenses!C5:C200=ActiveProject),"")'
-    ws["B26"] = '=IFERROR(FILTER(Expenses!F5:F200,Expenses!C5:C200=ActiveProject),"")'
-    ws["C26"] = '=IFERROR(FILTER(Expenses!G5:G200,Expenses!C5:C200=ActiveProject),"")'
-    ws["D26"] = '=IFERROR(FILTER(Expenses!H5:H200,Expenses!C5:C200=ActiveProject),"")'
-    ws["E26"] = '=IFERROR(FILTER(Expenses!J5:J200,Expenses!C5:C200=ActiveProject),"")'
-    ws["A26"].number_format = DATE
-    ws["D26"].number_format = CUR
+    for i in range(6):
+        r = 26 + i
+        n = i + 1
+        ws.cell(r, 1).value = f'=IFERROR(INDEX(Expenses!B:B,MATCH({n},Expenses!M:M,0)),"")'
+        ws.cell(r, 1).number_format = DATE
+        ws.cell(r, 2).value = f'=IFERROR(INDEX(Expenses!F:F,MATCH({n},Expenses!M:M,0)),"")'
+        ws.cell(r, 3).value = f'=IFERROR(INDEX(Expenses!G:G,MATCH({n},Expenses!M:M,0)),"")'
+        ws.cell(r, 4).value = f'=IFERROR(INDEX(Expenses!H:H,MATCH({n},Expenses!M:M,0)),"")'
+        ws.cell(r, 4).number_format = CUR
+        ws.cell(r, 5).value = f'=IFERROR(INDEX(Expenses!J:J,MATCH({n},Expenses!M:M,0)),"")'
+        for c in range(1, 6):
+            ws.cell(r, c).fill = fill(WHITE if i % 2 == 0 else ROW_ALT)
+            ws.cell(r, c).font = font(9)
+            ws.cell(r, c).border = THIN
 
     # Room snapshot
     section_label(ws, 24, 8, "ROOMS", 6)
@@ -3089,11 +4796,18 @@ def build_dashboard(wb):
         cell.font = font(9, True, WHITE)
         cell.fill = fill(PRIMARY)
         cell.border = THIN
-    ws["A38"] = '=IFERROR(FILTER(Calendar!A5:A80,Calendar!A5:A80>=AsOfDate),"")'
-    ws["B38"] = '=IFERROR(FILTER(Calendar!C5:C80,Calendar!A5:A80>=AsOfDate),"")'
-    ws["C38"] = '=IFERROR(FILTER(Calendar!F5:F80,Calendar!A5:A80>=AsOfDate),"")'
-    ws["D38"] = '=IFERROR(FILTER(Calendar!G5:G80,Calendar!A5:A80>=AsOfDate),"")'
-    ws["A38"].number_format = DATE
+    for i in range(5):
+        r = 38 + i
+        n = i + 1
+        ws.cell(r, 1).value = f'=IFERROR(INDEX(Calendar!A:A,MATCH({n},Calendar!H:H,0)),"")'
+        ws.cell(r, 1).number_format = DATE
+        ws.cell(r, 2).value = f'=IFERROR(INDEX(Calendar!C:C,MATCH({n},Calendar!H:H,0)),"")'
+        ws.cell(r, 3).value = f'=IFERROR(INDEX(Calendar!F:F,MATCH({n},Calendar!H:H,0)),"")'
+        ws.cell(r, 4).value = f'=IFERROR(INDEX(Calendar!G:G,MATCH({n},Calendar!H:H,0)),"")'
+        for c in range(1, 5):
+            ws.cell(r, c).fill = fill(WHITE if i % 2 == 0 else ROW_ALT)
+            ws.cell(r, c).font = font(9)
+            ws.cell(r, c).border = THIN
 
     # Quick actions (as labeled cells — operational in Apps Script)
     section_label(ws, 36, 8, "QUICK ACTIONS  (use the Novality Store menu in Google Sheets)", 6)
@@ -3117,17 +4831,14 @@ def build_dashboard(wb):
     section_label(ws, 45, 1, "AI INSIGHT", 12)
     ws.merge_cells("A46:L48")
     ws["A46"] = (
-        '=IFERROR(INDEX(\'AI Insights\'!G:G,MATCH(1,(\'AI Insights\'!C:C=ActiveProject)*'
-        '((\'AI Insights\'!J:J="New")+(\'AI Insights\'!J:J="In Progress")),0)),'
-        '"No open AI insights.")'
+        '=IFERROR(INDEX(\'AI Insights\'!G:G,MATCH(1,\'AI Insights\'!L:L,0)),"No open AI insights.")'
     )
     ws["A46"].alignment = align("left", "center", True)
     ws["A46"].font = font(11, False, TEXT)
     ws["A46"].fill = fill(WHITE)
     ws.merge_cells("A49:L50")
     ws["A49"] = (
-        '=IFERROR("Recommendation: "&INDEX(\'AI Insights\'!H:H,MATCH(1,(\'AI Insights\'!C:C=ActiveProject)*'
-        '((\'AI Insights\'!J:J="New")+(\'AI Insights\'!J:J="In Progress")),0)),"")'
+        '=IFERROR("Recommendation: "&INDEX(\'AI Insights\'!H:H,MATCH(1,\'AI Insights\'!L:L,0)),"")'
     )
     ws["A49"].alignment = align("left", "center", True)
     ws["A49"].font = font(10, True, ACCENT)
@@ -3136,17 +4847,17 @@ def build_dashboard(wb):
     # Nav
     section_label(ws, 52, 1, "NAVIGATION", 12)
     nav = [
-        (53, 1, "Projects", "Projects"),
+        (53, 1, "Hub", "Module Hub"),
         (53, 3, "Rooms", "Rooms"),
         (53, 5, "Design", "Design Studio"),
         (53, 7, "Budget", "Budget"),
         (53, 9, "Team", "Contractors"),
         (53, 11, "Materials", "Materials"),
         (54, 1, "Tasks", "Tasks"),
-        (54, 3, "Messages", "Messages"),
-        (54, 5, "Documents", "Documents"),
-        (54, 7, "Home", "Inventory"),
-        (54, 9, "Maint.", "Maintenance"),
+        (54, 3, "Labor", "Worker Master Data"),
+        (54, 5, "Snags", "Defect Snagging List"),
+        (54, 7, "Invoices", "Invoice Management"),
+        (54, 9, "Reports", "KPI Dashboard"),
         (54, 11, "Admin", "Admin"),
     ]
     for r, c, label, target in nav:
@@ -3221,10 +4932,17 @@ def build_admin(wb):
         cell.font = font(9, True, WHITE)
         cell.fill = fill(PRIMARY)
         cell.border = THIN
-    ws["A25"] = "=Suppliers!B5:B20"
-    ws["B25"] = "=Suppliers!C5:C20"
-    ws["C25"] = "=Suppliers!H5:H20"
-    ws["D25"] = "=Suppliers!J5:J20"
+    for i in range(len(D.SUPPLIERS)):
+        r = 25 + i
+        src_row = 5 + i
+        ws.cell(r, 1).value = f'=IFERROR(INDEX(Suppliers!B:B,{src_row}),"")'
+        ws.cell(r, 2).value = f'=IFERROR(INDEX(Suppliers!C:C,{src_row}),"")'
+        ws.cell(r, 3).value = f'=IFERROR(INDEX(Suppliers!H:H,{src_row}),"")'
+        ws.cell(r, 4).value = f'=IFERROR(INDEX(Suppliers!J:J,{src_row}),"")'
+        for c in range(1, 5):
+            ws.cell(r, c).fill = fill(WHITE if i % 2 == 0 else ROW_ALT)
+            ws.cell(r, c).border = THIN
+            ws.cell(r, c).font = font(10)
 
     set_col_widths(ws, [28, 16, 14, 16, 14, 14, 12, 12, 12, 14, 12, 12])
     return ws
@@ -3235,7 +4953,7 @@ def build_admin(wb):
 # ===========================================================================
 def build_start(wb):
     ws = _sheet(wb, "Start Here", ACCENT, 10,
-                "Read this first  ·  then open Dashboard  ·  upload this file to Google Drive to get a Google Sheet")
+                "Read this first  ·  then Module Hub  ·  then Dashboard  ·  author Novality store")
     ws.merge_cells("A4:J4")
     ws["A4"] = "Novality Store  ·  Home Renovation Management System"
     ws["A4"].font = font(20, True, PRIMARY)
@@ -3244,9 +4962,9 @@ def build_start(wb):
 
     ws.merge_cells("A5:J6")
     ws["A5"] = (
-        "A digital twin of the home: every room, material, contractor, expense, document, task, "
-        "photo, warranty and maintenance activity is connected to a place in the house. "
-        "This workbook is the complete operating system for a renovation — from first idea through handover and aftercare."
+        "A digital twin of the home plus a full contractor operating system: projects, phases, Gantt, "
+        "clients, budget, labor, materials, equipment, quality, safety, invoices, P&L and after-sales. "
+        "Every room, worker, purchase order and snag is connected to a place in the house."
     )
     ws["A5"].alignment = align("left", "center", True)
     ws["A5"].font = font(11, False, TEXT)
@@ -3306,43 +5024,63 @@ def build_start(wb):
         cell.alignment = align("center", "center")
         ws.row_dimensions[r].height = 22
 
-    # Module index
-    section_label(ws, 22, 1, "Module index  (click to jump)", 9)
+    # Module index — full contractor ERP lives on Module Hub
+    section_label(ws, 22, 1, "Module index  (click to jump)  ·  full map is on Module Hub", 9)
     modules = [
+        ("Module Hub", "MODULE QUICK LINKS — every contractor ERP sheet"),
         ("Dashboard", "Homeowner overview, KPIs, alerts, next tasks"),
-        ("Projects", "Multi-project register with live spend"),
-        ("Rooms", "Spaces, measurements, budgets, photos"),
-        ("Design Studio", "Mood boards, palettes, 2D/3D, AI concepts"),
-        ("AI Insights", "Assistant recommendations and savings"),
-        ("Budget", "Category + room plan vs actual"),
-        ("Expenses", "Transaction log (Planned / Committed / Paid)"),
-        ("Finance", "Charts, monthly cash, smart alerts"),
-        ("Contractors", "Profiles + Quality / On-time / Budget / Comms score"),
-        ("Quotes", "Bid comparison and award"),
-        ("Jobs", "Assignments, milestones, balances"),
-        ("Tasks", "Kanban fields + health + dependencies"),
-        ("Timeline", "Phase Gantt (weekly)"),
-        ("Materials", "Procurement pipeline + QR / SKU"),
-        ("Shopping List", "Auto list of items still to buy"),
-        ("Suppliers", "Lead times and terms"),
-        ("Documents", "Project vault + expiry alerts"),
-        ("Messages", "Threaded communication log"),
-        ("Inventory", "Home contents for insurance"),
-        ("Maintenance", "Aftercare hub + reminders"),
-        ("Inspections", "City and independent"),
-        ("Payments", "Draws and aging"),
-        ("Change Orders", "Scope / cost / schedule deltas"),
-        ("Permits", "Authorities and expirations"),
-        ("Warranties", "Labor and product coverage"),
-        ("Calendar", "Visits and deadlines"),
-        ("Notifications", "Alert queue"),
-        ("Users", "Nine roles"),
-        ("Properties", "Multi-home digital twin"),
-        ("Admin", "Portfolio analytics"),
+        ("KPI Dashboard", "Portfolio construction KPIs, margin, AR"),
+        ("Projects", "Project master data with live spend"),
+        ("Project Phases", "Phase budget, spent, % complete"),
+        ("Tasks", "Task management + health + dependencies"),
+        ("Gantt Chart", "Weekly Gantt of every phase"),
+        ("Client Master Data", "Homeowners, leads, budget range"),
+        ("Client Communication", "Meetings, calls, site visits"),
+        ("Client Satisfaction", "Surveys, NPS, walkthrough scores"),
+        ("Budget", "Budget planning vs actual"),
+        ("Expenses", "Cost / expense tracker"),
+        ("Finance", "Budget dashboard + charts"),
+        ("Income Tracker", "Client payments and deposits"),
+        ("Profit Loss Project", "Income − cost by project"),
+        ("Cash Flow Tracker", "Monthly in / out / closing"),
+        ("Contractors", "Contractor master list + score"),
+        ("Contractor Performance", "Jobs, paid, snags, rating band"),
+        ("Materials", "Material master + procurement"),
+        ("Material Estimation", "Takeoff, waste, labor + material $"),
+        ("Purchase Orders", "PO header, tax, freight, balance"),
+        ("Material Inventory", "Stock on hand / reserved / value"),
+        ("Worker Master Data", "Crew book, rates, certifications"),
+        ("Worker Attendance", "Daily timesheet + pay"),
+        ("Labor Cost Calc", "Burdened job-costed labor"),
+        ("Productivity Tracker", "Units/hr vs plan"),
+        ("Rooms", "Room area master"),
+        ("Room Work Checklist", "Punch / closeout per room"),
+        ("Room Cost Summary", "Materials / labor / $/sf"),
+        ("Design Studio", "Design requirements + mood boards"),
+        ("Measurements Specs", "Field measure, net area"),
+        ("Material Selection", "Finish board + sample status"),
+        ("Equipment Inventory", "Owned and rented tools"),
+        ("Equipment Usage Log", "Hours and rental cost"),
+        ("Equipment Maintenance", "Tool service due dates"),
+        ("Quality Standards", "What done means on this job"),
+        ("Inspections", "Inspection log"),
+        ("Defect Snagging List", "Punch / snag list"),
+        ("Safety Checklist", "Daily site safety"),
+        ("Incident Accident Log", "Near miss through recordable"),
+        ("Quotes", "Quotation builder"),
+        ("Invoice Management", "Client draws, aging"),
+        ("Payment Receipts", "Money in, tied to invoices"),
+        ("Documents", "Document register"),
+        ("Contract Register", "GC / design / subcontract"),
+        ("Warranties", "Warranty register"),
+        ("After-Sales Service", "Callbacks and claims"),
+        ("Project Status Report", "Printable status pack"),
+        ("Weekly Progress Report", "Week-of calendar + narrative"),
+        ("Admin", "Studio portfolio analytics"),
         ("Settings", "Currency, thresholds, brand"),
         ("Lookups", "Dropdown lists"),
+        ("Roles & Permissions", "Who can do what"),
         ("Audit Log", "Who changed what"),
-        ("Roles & Permissions", "Matrix of who can do what"),
     ]
     ws.cell(23, 1, "Sheet").font = font(9, True, WHITE)
     ws.cell(23, 1).fill = fill(PRIMARY)
@@ -3409,23 +5147,24 @@ def build_roles(wb):
     ws = _sheet(wb, "Roles & Permissions", PRIMARY_SOFT, 12,
                 "Who can see and change what  ·  enforce in the live product; this matrix is the source of truth")
     modules = [
-        "Dashboard", "Projects", "Rooms", "Design Studio", "AI Insights", "Budget",
-        "Expenses", "Finance", "Contractors", "Quotes", "Jobs", "Tasks", "Materials",
-        "Documents", "Messages", "Inventory", "Maintenance", "Inspections", "Payments",
-        "Change Orders", "Permits", "Admin", "Settings", "Users",
+        "Dashboard", "Projects", "Project Phases", "Rooms", "Design Studio", "AI Insights",
+        "Budget", "Expenses", "Finance", "Income Tracker", "Contractors", "Quotes",
+        "Jobs", "Tasks", "Materials", "Purchase Orders", "Workers", "Documents",
+        "Messages", "Inventory", "Maintenance", "Inspections", "Snagging", "Safety",
+        "Payments", "Invoices", "Change Orders", "Permits", "Admin", "Settings", "Users",
     ]
     roles = D.LOOKUPS["Role"]
     # permission codes: F full, E edit own, V view, A approve, — none
     matrix = {
-        "Homeowner": "F F F F V V E V V V V E V F F F F V V A V — — —".split(),
-        "Admin": ["F"] * len(modules),
-        "Project Manager": "F F F V V F F F F F F F F F F V F F F A F V V V".split(),
-        "Interior Designer": "V V F F F V V V V V V F F F F V V — — V — — — —".split(),
-        "Contractor": "V V V V — — E — V V F F E V F — V V V V V — — —".split(),
-        "Subcontractor": "V V V — — — — — — — F F E V F — — V — — — — — —".split(),
-        "Supplier": "— — — — — — — — — V — — F V E — — — V — — — — —".split(),
-        "Inspector": "V V V — — — — — V — V V — F V — — F — — F — — —".split(),
-        "Accountant": "V V — — — F F F V V V — V F — — — — F V V V — V".split(),
+        "Homeowner": "F F V F F V V E V V V V V E V V — F F F F V V V V V A V — — —".split(),
+        "Admin": ["F"] * 31,
+        "Project Manager": "F F F F V V F F F F F F F F F F F F F V F F F F F V A F V V V".split(),
+        "Interior Designer": "V V V F F F V V V — V V V F F V — F F V V — V — — — V — — — —".split(),
+        "Contractor": "V V V V — — — E — — V V F F E V E V F — V V F V V V V V — — —".split(),
+        "Subcontractor": "V V V V — — — — — — — — F F E — E V F — — V F V — — — — — — —".split(),
+        "Supplier": "— — — — — — — — — — — V — — F F — V E — — — — — V — — — — — —".split(),
+        "Inspector": "V V V V — — — — — — V — V V — — — F V — — F F F — — — F — — —".split(),
+        "Accountant": "V V V — — — F F F F V V V — V F — F — — — — — — F F V V V — V".split(),
     }
     ws.cell(4, 1, "Module \\ Role").font = font(9, True, WHITE)
     ws.cell(4, 1).fill = fill(PRIMARY)
@@ -3499,33 +5238,29 @@ def build_workbook() -> Workbook:
     build_dashboard(wb)
     build_start(wb)
 
+    from . import modules as extra_modules
+
+    extra_modules.build_all(wb)
+
     wb.remove(default)
 
-    # Desired tab order
-    order = [
-        "Start Here", "Dashboard", "Projects", "Rooms", "Design Studio", "AI Insights",
-        "Budget", "Expenses", "Finance", "Contractors", "Quotes", "Jobs",
-        "Tasks", "Timeline", "Materials", "Shopping List", "Suppliers",
-        "Documents", "Messages", "Inventory", "Maintenance",
-        "Inspections", "Payments", "Change Orders", "Permits", "Warranties",
-        "Calendar", "Notifications", "Users", "Properties", "Roles & Permissions",
-        "Admin", "Settings", "Lookups", "Audit Log",
-    ]
+    order = extra_modules.SHEET_ORDER
     for i, name in enumerate(order):
         wb.move_sheet(name, offset=i - wb.sheetnames.index(name))
 
     wb.calculation.calcMode = "auto"
     wb.calculation.fullCalcOnLoad = True
     wb.properties.title = "Novality Store — Home Renovation Management System"
-    wb.properties.creator = "premium"
-    wb.properties.lastModifiedBy = "premium"
+    wb.properties.creator = "Novality store"
+    wb.properties.lastModifiedBy = "Novality store"
     wb.properties.description = (
-        "Complete home renovation operating system: projects, rooms, design, "
-        "budget, contractors, tasks, materials, documents, inventory, maintenance. "
-        "Formula cells locked. Unprotect password: premium."
+        "Complete home renovation + contractor operating system: projects, phases, "
+        "clients, budget, labor, materials, equipment, quality, safety, invoices, "
+        "P&L, cash flow, warranties. Formula cells locked. Author: Novality store. "
+        "Unprotect password: premium."
     )
     wb.properties.subject = "Home Renovation Management System"
-    wb.properties.keywords = "premium, home renovation, spreadsheet, google sheets"
+    wb.properties.keywords = "Novality store, home renovation, spreadsheet, google sheets"
     wb.properties.category = "Spreadsheets"
 
     from .protect import protect_workbook
@@ -3533,434 +5268,174 @@ def build_workbook() -> Workbook:
     protect_workbook(wb, password="premium")
     return wb
 
+===== check_integrity.py =====
+#!/usr/bin/env python3
+"""Integrity check for the protected Novality Store workbook."""
 
-################################################################################
-# FILE: google_apps_script/Code.gs
-################################################################################
+from __future__ import annotations
 
-/**
- * Novality Store — Home Renovation Management System
- * Google Sheets companion script.
- *
- * Install
- *   1. Upload the .xlsx and open it with Google Sheets (File → Save as Google Sheets).
- *   2. Extensions → Apps Script.
- *   3. Replace the default file with this script. Save.
- *   4. Reload the spreadsheet. Use the "Novality Store" menu.
- *
- * Brand
- *   Primary #16352F  ·  Sand #E8DDCB  ·  Terracotta #C86B4A  ·  Ivory #F8F6F1
- */
+import sys
+from pathlib import Path
 
-var BRAND = {
-  primary: '#16352F',
-  sand: '#E8DDCB',
-  terracotta: '#C86B4A',
-  ivory: '#F8F6F1',
-  sage: '#719B7A',
-  amber: '#D99A3D',
-  danger: '#C75C5C',
-};
+from openpyxl import load_workbook
+from openpyxl.cell.cell import MergedCell
 
-function onOpen() {
-  SpreadsheetApp.getUi()
-    .createMenu('Novality Store')
-    .addItem('Open homeowner dashboard', 'goDashboard')
-    .addSeparator()
-    .addItem('Add expense…', 'addExpense')
-    .addItem('Add task…', 'addTask')
-    .addItem('Add material…', 'addMaterial')
-    .addItem('Log a message…', 'addMessage')
-    .addSeparator()
-    .addItem('Refresh shopping list', 'refreshShoppingList')
-    .addItem('Highlight overdue tasks', 'highlightOverdue')
-    .addItem('Build this-week calendar view', 'thisWeekAgenda')
-    .addSeparator()
-    .addItem('Email maintenance reminders', 'emailMaintenanceReminders')
-    .addItem('Email unread messages digest', 'emailUnreadDigest')
-    .addSeparator()
-    .addItem('About this system', 'showAbout')
-    .addToUi();
+ROOT = Path(__file__).resolve().parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from hrms.modules import SHEET_ORDER  # noqa: E402
+
+XLSX = ROOT / "Novality_Store_Home_Renovation_System.xlsx"
+
+EXPECTED_SHEETS = SHEET_ORDER
+AUTHOR = "Novality store"
+
+REQUIRED_NAMES = {
+    "ActiveProject", "HomeownerName", "AsOfDate", "ContingencyPct",
+    "ContingencyFloor", "OverrunAlert", "CompanyName", "TaxRate",
 }
 
-function goDashboard() {
-  var ss = SpreadsheetApp.getActive();
-  var sh = ss.getSheetByName('Dashboard');
-  if (sh) ss.setActiveSheet(sh);
-}
-
-function showAbout() {
-  var html = HtmlService.createHtmlOutput(
-    '<div style="font-family:Georgia,serif;color:#202522;background:#F8F6F1;padding:16px">' +
-      '<h2 style="color:#16352F;margin:0 0 8px">Novality Store</h2>' +
-      '<p style="margin:0 0 12px">Home Renovation Management System — a digital twin of the home.</p>' +
-      '<p>Every room, material, contractor, expense, document, task, photo, warranty and ' +
-      'maintenance activity is connected to a place in the house.</p>' +
-      '<p style="color:#C86B4A"><b>Tip:</b> change <i>Settings → Active Project ID</i> to switch dashboards.</p>' +
-      '</div>'
-  )
-    .setWidth(420)
-    .setHeight(260);
-  SpreadsheetApp.getUi().showModalDialog(html, 'About');
-}
-
-function setting_(key) {
-  var sh = SpreadsheetApp.getActive().getSheetByName('Settings');
-  if (!sh) return '';
-  var values = sh.getRange(5, 1, 40, 2).getValues();
-  for (var i = 0; i < values.length; i++) {
-    if (String(values[i][0]) === key) return values[i][1];
-  }
-  return '';
-}
-
-function activeProject_() {
-  return String(setting_('Active Project ID') || 'PRJ-001');
-}
-
-function nextId_(sheetName, prefix, col) {
-  var sh = SpreadsheetApp.getActive().getSheetByName(sheetName);
-  var last = sh.getLastRow();
-  if (last < 5) return prefix + '-001';
-  var ids = sh.getRange(5, col || 1, last - 4, 1).getValues();
-  var max = 0;
-  for (var i = 0; i < ids.length; i++) {
-    var m = String(ids[i][0]).match(/(\d+)$/);
-    if (m) max = Math.max(max, parseInt(m[1], 10));
-  }
-  return prefix + '-' + ('000' + (max + 1)).slice(-3);
-}
-
-function firstEmptyRow_(sh) {
-  var last = sh.getLastRow();
-  return last < 5 ? 5 : last + 1;
-}
-
-function prompt_(title, fields) {
-  var ui = SpreadsheetApp.getUi();
-  var result = {};
-  for (var i = 0; i < fields.length; i++) {
-    var f = fields[i];
-    var resp = ui.prompt(title, f.label, ui.ButtonSet.OK_CANCEL);
-    if (resp.getSelectedButton() !== ui.Button.OK) return null;
-    result[f.key] = resp.getResponseText();
-  }
-  return result;
-}
-
-function addExpense() {
-  var data = prompt_('Add expense', [
-    { key: 'desc', label: 'Description (e.g. Island slab deposit)' },
-    { key: 'amount', label: 'Amount in USD (e.g. 1860)' },
-    { key: 'vendor', label: 'Vendor' },
-    { key: 'category', label: 'Category (Labor / Materials / Design / Permits / Delivery / Contingency / Appliances / Furniture / Inspections / Other)' },
-    { key: 'status', label: 'Status (Planned / Committed / Paid)' },
-    { key: 'room', label: 'Room ID (e.g. RM-01) or leave blank' },
-  ]);
-  if (!data) return;
-  var sh = SpreadsheetApp.getActive().getSheetByName('Expenses');
-  var row = firstEmptyRow_(sh);
-  var id = nextId_('Expenses', 'EXP');
-  sh.getRange(row, 1, 1, 12).setValues([
-    [
-      id,
-      new Date(),
-      activeProject_(),
-      data.room,
-      data.category || 'Other',
-      data.vendor,
-      data.desc,
-      Number(data.amount) || 0,
-      'ACH',
-      data.status || 'Planned',
-      '',
-      setting_('Homeowner'),
-    ],
-  ]);
-  toast_('Logged ' + id + ' — ' + data.desc);
-}
-
-function addTask() {
-  var data = prompt_('Add task', [
-    { key: 'title', label: 'Task title' },
-    { key: 'room', label: 'Room ID (e.g. RM-01)' },
-    { key: 'owner', label: 'Assignee' },
-    { key: 'deadline', label: 'Deadline YYYY-MM-DD' },
-    { key: 'priority', label: 'Priority (Critical / High / Medium / Low)' },
-  ]);
-  if (!data) return;
-  var sh = SpreadsheetApp.getActive().getSheetByName('Tasks');
-  var row = firstEmptyRow_(sh);
-  var id = nextId_('Tasks', 'TSK');
-  var deadline = data.deadline ? new Date(data.deadline) : '';
-  sh.getRange(row, 1, 1, 15).setValues([
-    [
-      id,
-      activeProject_(),
-      data.room,
-      data.title,
-      '',
-      data.owner,
-      'Homeowner',
-      'To Do',
-      data.priority || 'Medium',
-      new Date(),
-      deadline,
-      0,
-      '',
-      0,
-      '',
-    ],
-  ]);
-  // copy formula cells if present on row above
-  if (row > 5) {
-    sh.getRange(row - 1, 16, 1, 2).copyTo(sh.getRange(row, 16, 1, 2));
-  }
-  toast_('Created ' + id + ' — ' + data.title);
-}
-
-function addMaterial() {
-  var data = prompt_('Add material', [
-    { key: 'product', label: 'Product name' },
-    { key: 'sku', label: 'SKU / QR' },
-    { key: 'qty', label: 'Quantity required' },
-    { key: 'price', label: 'Unit price' },
-    { key: 'supplier', label: 'Supplier' },
-    { key: 'room', label: 'Room ID' },
-  ]);
-  if (!data) return;
-  var sh = SpreadsheetApp.getActive().getSheetByName('Materials');
-  var row = firstEmptyRow_(sh);
-  var id = nextId_('Materials', 'MAT');
-  sh.getRange(row, 1, 1, 21).setValues([
-    [
-      id,
-      activeProject_(),
-      data.room,
-      data.product,
-      '',
-      data.sku,
-      'Other',
-      Number(data.qty) || 1,
-      'ea',
-      Number(data.price) || 0,
-      '',
-      data.supplier,
-      0,
-      0,
-      0,
-      'Required',
-      0,
-      '',
-      '',
-      '',
-      data.sku,
-    ],
-  ]);
-  if (row > 5) {
-    sh.getRange(row - 1, 11).copyTo(sh.getRange(row, 11));
-    sh.getRange(row - 1, 22).copyTo(sh.getRange(row, 22));
-  }
-  toast_('Added ' + id + ' — ' + data.product);
-}
-
-function addMessage() {
-  var data = prompt_('Log a message', [
-    { key: 'to', label: 'To (name)' },
-    { key: 'room', label: 'Room / task context' },
-    { key: 'body', label: 'Message' },
-  ]);
-  if (!data) return;
-  var sh = SpreadsheetApp.getActive().getSheetByName('Messages');
-  var row = firstEmptyRow_(sh);
-  var id = nextId_('Messages', 'MSG');
-  sh.getRange(row, 1, 1, 11).setValues([
-    [
-      id,
-      new Date(),
-      activeProject_(),
-      data.room,
-      setting_('Homeowner'),
-      data.to,
-      'App',
-      data.body,
-      '',
-      '',
-      'No',
-    ],
-  ]);
-  toast_('Message ' + id + ' logged');
-}
-
-function refreshShoppingList() {
-  var ss = SpreadsheetApp.getActive();
-  var shop = ss.getSheetByName('Shopping List');
-  if (shop) {
-    ss.setActiveSheet(shop);
-    SpreadsheetApp.flush();
-    toast_('Shopping List uses FILTER of Materials still Required / Quoted / Approved.');
-  }
-}
-
-function highlightOverdue() {
-  var sh = SpreadsheetApp.getActive().getSheetByName('Tasks');
-  var last = sh.getLastRow();
-  if (last < 5) return;
-  var range = sh.getRange(5, 17, last - 4, 1); // Health
-  var values = range.getValues();
-  var backgrounds = [];
-  for (var i = 0; i < values.length; i++) {
-    var v = String(values[i][0]);
-    if (v === 'Overdue') backgrounds.push([BRAND.danger]);
-    else if (v === 'Due Soon') backgrounds.push([BRAND.amber]);
-    else if (v === 'Done') backgrounds.push([BRAND.sage]);
-    else backgrounds.push([BRAND.ivory]);
-  }
-  range.setBackgrounds(backgrounds);
-  toast_('Overdue tasks highlighted on Tasks!Q');
-}
-
-function thisWeekAgenda() {
-  var cal = SpreadsheetApp.getActive().getSheetByName('Calendar');
-  var last = cal.getLastRow();
-  if (last < 5) return;
-  var values = cal.getRange(5, 1, last - 4, 7).getValues();
-  var today = new Date();
-  var end = new Date(today.getTime() + 7 * 86400000);
-  var lines = ['This week at Maplewood / Gorge', ''];
-  for (var i = 0; i < values.length; i++) {
-    var d = values[i][0];
-    if (!(d instanceof Date)) continue;
-    if (d >= strip_(today) && d <= end) {
-      lines.push(
-        Utilities.formatDate(d, Session.getScriptTimeZone(), 'EEE d MMM') +
-          '  ' +
-          values[i][1] +
-          '  ·  ' +
-          values[i][2] +
-          '  ·  ' +
-          values[i][5]
-      );
-    }
-  }
-  if (lines.length === 2) lines.push('Nothing scheduled in the next 7 days.');
-  SpreadsheetApp.getUi().alert(lines.join('\n'));
-}
-
-function emailMaintenanceReminders() {
-  var sh = SpreadsheetApp.getActive().getSheetByName('Maintenance');
-  var last = sh.getLastRow();
-  if (last < 5) return;
-  var values = sh.getRange(5, 1, last - 4, 14).getValues();
-  var due = [];
-  for (var i = 0; i < values.length; i++) {
-    var flag = String(values[i][13]);
-    if (flag.indexOf('OVERDUE') >= 0 || flag.indexOf('Due soon') >= 0) {
-      due.push(values[i][1] + ' — ' + values[i][6] + ' (' + flag + ')');
-    }
-  }
-  var email = Session.getActiveUser().getEmail();
-  if (!email) {
-    SpreadsheetApp.getUi().alert('No user email available in this context.');
-    return;
-  }
-  if (!due.length) {
-    toast_('No maintenance items due.');
-    return;
-  }
-  MailApp.sendEmail({
-    to: email,
-    subject: 'Novality Store — maintenance due',
-    htmlBody:
-      '<div style="font-family:Georgia,serif;color:#202522">' +
-      '<h2 style="color:#16352F">Maintenance due</h2><ul><li>' +
-      due.join('</li><li>') +
-      '</li></ul></div>',
-  });
-  toast_('Sent ' + due.length + ' reminder(s) to ' + email);
-}
-
-function emailUnreadDigest() {
-  var sh = SpreadsheetApp.getActive().getSheetByName('Messages');
-  var last = sh.getLastRow();
-  if (last < 5) return;
-  var values = sh.getRange(5, 1, last - 4, 11).getValues();
-  var unread = [];
-  for (var i = 0; i < values.length; i++) {
-    if (String(values[i][10]) === 'No') {
-      unread.push(values[i][4] + ' → ' + values[i][5] + ': ' + values[i][7]);
-    }
-  }
-  var email = Session.getActiveUser().getEmail();
-  if (!unread.length) {
-    toast_('No unread messages.');
-    return;
-  }
-  MailApp.sendEmail({
-    to: email,
-    subject: 'Novality Store — unread project messages',
-    htmlBody:
-      '<div style="font-family:Georgia,serif;color:#202522">' +
-      '<h2 style="color:#16352F">Unread messages</h2><ul><li>' +
-      unread.join('</li><li>') +
-      '</li></ul></div>',
-  });
-  toast_('Digest sent to ' + email);
-}
-
-function toast_(msg) {
-  SpreadsheetApp.getActive().toast(msg, 'Novality Store', 6);
-}
-
-function strip_(d) {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+KEY_FORMULAS = {
+    ("Projects", "R5"): "SUMIFS",
+    ("Rooms", "Q5"): "ROUND",
+    ("Budget", "G5"): "SUMIFS",
+    ("Finance", "A6"): "SUMIF",
+    ("Contractors", "M5"): "AVERAGE",
+    ("Tasks", "Q5"): "Overdue",
+    ("Materials", "K5"): "$H5*$J5",
+    ("Dashboard", "D12"): "H8-K8-A12",
+    ("Module Hub", "A4"): "MODULE QUICK LINKS",
+    ("Project Phases", "F5"): "$E5-$D5",
+    ("Labor Cost Calc", "O5"): "$L5+$M5+$N5",
+    ("Invoice Management", "H5"): "$F5+$G5",
+    ("Profit Loss Project", "H5"): "$C5-$G5",
 }
 
 
-################################################################################
-# FILE: google_apps_script/appsscript.json
-################################################################################
+def main() -> int:
+    if not XLSX.exists():
+        print("MISSING", XLSX)
+        return 2
+    wb = load_workbook(XLSX, data_only=False)
+    fails = []
+    notes = []
 
-{
-  "timeZone": "America/Los_Angeles",
-  "exceptionLogging": "STACKDRIVER",
-  "runtimeVersion": "V8",
-  "oauthScopes": [
-    "https://www.googleapis.com/auth/spreadsheets.currentonly",
-    "https://www.googleapis.com/auth/script.send_mail"
-  ]
-}
+    if list(wb.sheetnames) != EXPECTED_SHEETS:
+        extra = [s for s in wb.sheetnames if s not in EXPECTED_SHEETS]
+        missing = [s for s in EXPECTED_SHEETS if s not in wb.sheetnames]
+        fails.append(
+            f"Sheet order/count mismatch ({len(wb.sheetnames)} vs {len(EXPECTED_SHEETS)}). "
+            f"Missing={missing[:8]} Extra={extra[:8]}"
+        )
+    else:
+        notes.append(f"{len(EXPECTED_SHEETS)} sheets in expected order")
+
+    creator = wb.properties.creator
+    modified = wb.properties.lastModifiedBy
+    if creator != AUTHOR:
+        fails.append(f"creator is {creator!r}, expected {AUTHOR!r}")
+    else:
+        notes.append(f"Author / creator = {AUTHOR}")
+    if modified != AUTHOR:
+        fails.append(f"lastModifiedBy is {modified!r}, expected {AUTHOR!r}")
+    else:
+        notes.append(f"Last modified by = {AUTHOR}")
+
+    names = set(wb.defined_names.keys())
+    missing = REQUIRED_NAMES - names
+    if missing:
+        fails.append(f"Missing named ranges: {sorted(missing)}")
+    else:
+        notes.append(f"{len(names)} named ranges present")
+
+    unprotected = []
+    formula_unlocked = []
+    formula_count = 0
+    locked_formulas = 0
+    banned = []
+    for ws in wb.worksheets:
+        if not ws.protection.sheet:
+            unprotected.append(ws.title)
+        for row in ws.iter_rows(min_row=1, max_row=min(ws.max_row or 1, 80),
+                                min_col=1, max_col=min(ws.max_column or 1, 40)):
+            for cell in row:
+                if isinstance(cell, MergedCell):
+                    continue
+                if isinstance(cell.value, str) and cell.value.startswith("="):
+                    formula_count += 1
+                    val = cell.value.upper()
+                    if "FILTER(" in val or "SMALL(IF" in val:
+                        banned.append(f"{ws.title}!{cell.coordinate}")
+                    if not cell.protection.locked:
+                        formula_unlocked.append(f"{ws.title}!{cell.coordinate}")
+                    else:
+                        locked_formulas += 1
+
+    if unprotected:
+        fails.append(f"Sheets not protected: {unprotected}")
+    else:
+        notes.append(f"All {len(wb.sheetnames)} sheets have sheet protection enabled")
+
+    if formula_unlocked:
+        fails.append(f"{len(formula_unlocked)} formula cells left unlocked (first 8): {formula_unlocked[:8]}")
+    else:
+        notes.append(f"{locked_formulas} sampled formula cells are locked")
+
+    if banned:
+        fails.append(f"Banned FILTER/SMALL-IF formulas: {banned[:6]}")
+    else:
+        notes.append("No FILTER / SMALL(IF) formulas in sampled cells")
+
+    for (sheet, addr), needle in KEY_FORMULAS.items():
+        val = str(wb[sheet][addr].value or "")
+        if needle not in val:
+            fails.append(f"{sheet}!{addr} missing {needle!r}: {val[:80]!r}")
+    notes.append("Key live formulas still present")
+
+    if wb["Projects"]["A5"].value != "PRJ-001":
+        fails.append("Sample project PRJ-001 missing")
+    if wb["Materials"]["P5"].value != "Delivered":
+        fails.append(f"Materials status misaligned: {wb['Materials']['P5'].value!r}")
+    if wb["Settings"]["B5"].value != "Novality Store":
+        fails.append("Settings company name changed")
+    if wb["Client Master Data"]["A5"].value != "CL-001":
+        fails.append("Client master sample missing")
+    notes.append("Sample story (PRJ-001 / Maplewood / CL-001) intact")
+
+    report = ROOT / "INTEGRITY_REPORT.md"
+    lines = [
+        "# Integrity report",
+        "",
+        f"File: `{XLSX.name}` ({XLSX.stat().st_size:,} bytes)",
+        "",
+        "## Result: **" + ("PASS" if not fails else "FAIL") + "**",
+        "",
+        "### Checks passed",
+    ]
+    for n in notes:
+        lines.append(f"- {n}")
+    lines += ["", "### Failures"]
+    if fails:
+        for f in fails:
+            lines.append(f"- {f}")
+    else:
+        lines.append("- None")
+    lines += [
+        "",
+        "### Protection",
+        "",
+        "- Sheet password: `premium`",
+        f"- Author: `{AUTHOR}`",
+        "- Formula / header / dashboard cells: locked",
+        "- Ivory input cells on registers + Settings column B + Lookups: unlocked",
+        "- Unprotect path: Review → Unprotect Sheet → `premium`",
+        "",
+    ]
+    report.write_text("\n".join(lines), encoding="utf-8")
+    print(report.read_text(encoding="utf-8"))
+    return 1 if fails else 0
 
 
-################################################################################
-# FILE: google_apps_script/README.md
-################################################################################
-
-# Google Sheets companion
-
-Turn the Excel workbook into a live Google Sheet with a **Novality Store** menu.
-
-## 5 minutes
-
-1. Upload `Novality_Store_Home_Renovation_System.xlsx` to [Google Drive](https://drive.google.com).
-2. Right-click → **Open with → Google Sheets**.
-3. **File → Save as Google Sheets**.
-4. **Extensions → Apps Script**.
-5. Delete the stub `myFunction` and paste [`Code.gs`](Code.gs). Save (Ctrl/Cmd+S).
-6. Close the script editor and **reload the spreadsheet**.
-7. Allow permissions the first time you run a menu item that sends email.
-
-You now have a Google Sheet with every module, live formulas, and:
-
-| Menu | Action |
-|---|---|
-| Open homeowner dashboard | Jump to Dashboard |
-| Add expense / task / material / message | Prompt → new ID'd row |
-| Refresh shopping list | Opens the FILTER sheet |
-| Highlight overdue tasks | Colors Tasks health |
-| Build this-week calendar view | Next 7 days |
-| Email maintenance reminders | Due / overdue lines to you |
-| Email unread messages digest | Unread threads to you |
-
-`appsscript.json` declares the two scopes the script needs (this spreadsheet + Gmail send). If you paste only `Code.gs`, Apps Script will still prompt for those scopes on first run.
-
+if __name__ == "__main__":
+    sys.exit(main())

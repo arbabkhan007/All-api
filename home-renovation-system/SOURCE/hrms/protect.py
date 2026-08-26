@@ -13,7 +13,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.workbook.protection import WorkbookProtection
 
 SHEET_PASSWORD = "premium"
-AUTHOR = "premium"
+AUTHOR = "Novality store"
 
 LOCKED = Protection(locked=True)
 UNLOCKED = Protection(locked=False)
@@ -21,11 +21,20 @@ UNLOCKED = Protection(locked=False)
 # Entirely calculated / branded surfaces — no casual typing
 LOCK_ALL = {
     "Start Here",
+    "Module Hub",
     "Dashboard",
     "Finance",
     "Admin",
     "Shopping List",
     "Roles & Permissions",
+    "Gantt Chart",
+    "Contractor Performance",
+    "Room Cost Summary",
+    "Profit Loss Project",
+    "Cash Flow Tracker",
+    "Project Status Report",
+    "Weekly Progress Report",
+    "KPI Dashboard",
 }
 
 # Extra empty rows unlocked for new records (input columns only)
@@ -125,7 +134,7 @@ def protect_sheet(ws, password: str = SHEET_PASSWORD) -> None:
 
 
 def protect_workbook(wb, password: str = SHEET_PASSWORD) -> list:
-    """Lock formulas, protect every sheet, stamp author = premium."""
+    """Lock formulas, protect every sheet, stamp author = Novality store."""
     reports = []
     for ws in wb.worksheets:
         reports.append(apply_cell_locks(ws))
@@ -135,6 +144,6 @@ def protect_workbook(wb, password: str = SHEET_PASSWORD) -> list:
     wb.security = WorkbookProtection(lockStructure=False, lockWindows=False)
     wb.properties.creator = AUTHOR
     wb.properties.lastModifiedBy = AUTHOR
-    wb.properties.keywords = "premium, home renovation, spreadsheet, google sheets"
+    wb.properties.keywords = "Novality store, home renovation, spreadsheet, google sheets"
     wb.properties.category = "Spreadsheets"
     return reports

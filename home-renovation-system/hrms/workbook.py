@@ -168,7 +168,7 @@ def _link(cell, target, text=None):
 # LOOKUPS
 # ===========================================================================
 def build_lookups(wb):
-    ws = _sheet(wb, "Lookups", PRIMARY_SOFT, 28, "Dropdown sources  ·  do not delete  ·  add values downward")
+    ws = _sheet(wb, "Lookups", PRIMARY_SOFT, 56, "Dropdown sources  ·  do not delete  ·  add values downward")
     col = 1
     named = {}
     for name, values in D.LOOKUPS.items():
@@ -1497,17 +1497,17 @@ def build_dashboard(wb):
     # Nav
     section_label(ws, 52, 1, "NAVIGATION", 12)
     nav = [
-        (53, 1, "Projects", "Projects"),
+        (53, 1, "Hub", "Module Hub"),
         (53, 3, "Rooms", "Rooms"),
         (53, 5, "Design", "Design Studio"),
         (53, 7, "Budget", "Budget"),
         (53, 9, "Team", "Contractors"),
         (53, 11, "Materials", "Materials"),
         (54, 1, "Tasks", "Tasks"),
-        (54, 3, "Messages", "Messages"),
-        (54, 5, "Documents", "Documents"),
-        (54, 7, "Home", "Inventory"),
-        (54, 9, "Maint.", "Maintenance"),
+        (54, 3, "Labor", "Worker Master Data"),
+        (54, 5, "Snags", "Defect Snagging List"),
+        (54, 7, "Invoices", "Invoice Management"),
+        (54, 9, "Reports", "KPI Dashboard"),
         (54, 11, "Admin", "Admin"),
     ]
     for r, c, label, target in nav:
@@ -1603,7 +1603,7 @@ def build_admin(wb):
 # ===========================================================================
 def build_start(wb):
     ws = _sheet(wb, "Start Here", ACCENT, 10,
-                "Read this first  ·  then open Dashboard  ·  upload this file to Google Drive to get a Google Sheet")
+                "Read this first  ·  then Module Hub  ·  then Dashboard  ·  author Novality store")
     ws.merge_cells("A4:J4")
     ws["A4"] = "Novality Store  ·  Home Renovation Management System"
     ws["A4"].font = font(20, True, PRIMARY)
@@ -1612,9 +1612,9 @@ def build_start(wb):
 
     ws.merge_cells("A5:J6")
     ws["A5"] = (
-        "A digital twin of the home: every room, material, contractor, expense, document, task, "
-        "photo, warranty and maintenance activity is connected to a place in the house. "
-        "This workbook is the complete operating system for a renovation — from first idea through handover and aftercare."
+        "A digital twin of the home plus a full contractor operating system: projects, phases, Gantt, "
+        "clients, budget, labor, materials, equipment, quality, safety, invoices, P&L and after-sales. "
+        "Every room, worker, purchase order and snag is connected to a place in the house."
     )
     ws["A5"].alignment = align("left", "center", True)
     ws["A5"].font = font(11, False, TEXT)
@@ -1674,43 +1674,63 @@ def build_start(wb):
         cell.alignment = align("center", "center")
         ws.row_dimensions[r].height = 22
 
-    # Module index
-    section_label(ws, 22, 1, "Module index  (click to jump)", 9)
+    # Module index — full contractor ERP lives on Module Hub
+    section_label(ws, 22, 1, "Module index  (click to jump)  ·  full map is on Module Hub", 9)
     modules = [
+        ("Module Hub", "MODULE QUICK LINKS — every contractor ERP sheet"),
         ("Dashboard", "Homeowner overview, KPIs, alerts, next tasks"),
-        ("Projects", "Multi-project register with live spend"),
-        ("Rooms", "Spaces, measurements, budgets, photos"),
-        ("Design Studio", "Mood boards, palettes, 2D/3D, AI concepts"),
-        ("AI Insights", "Assistant recommendations and savings"),
-        ("Budget", "Category + room plan vs actual"),
-        ("Expenses", "Transaction log (Planned / Committed / Paid)"),
-        ("Finance", "Charts, monthly cash, smart alerts"),
-        ("Contractors", "Profiles + Quality / On-time / Budget / Comms score"),
-        ("Quotes", "Bid comparison and award"),
-        ("Jobs", "Assignments, milestones, balances"),
-        ("Tasks", "Kanban fields + health + dependencies"),
-        ("Timeline", "Phase Gantt (weekly)"),
-        ("Materials", "Procurement pipeline + QR / SKU"),
-        ("Shopping List", "Auto list of items still to buy"),
-        ("Suppliers", "Lead times and terms"),
-        ("Documents", "Project vault + expiry alerts"),
-        ("Messages", "Threaded communication log"),
-        ("Inventory", "Home contents for insurance"),
-        ("Maintenance", "Aftercare hub + reminders"),
-        ("Inspections", "City and independent"),
-        ("Payments", "Draws and aging"),
-        ("Change Orders", "Scope / cost / schedule deltas"),
-        ("Permits", "Authorities and expirations"),
-        ("Warranties", "Labor and product coverage"),
-        ("Calendar", "Visits and deadlines"),
-        ("Notifications", "Alert queue"),
-        ("Users", "Nine roles"),
-        ("Properties", "Multi-home digital twin"),
-        ("Admin", "Portfolio analytics"),
+        ("KPI Dashboard", "Portfolio construction KPIs, margin, AR"),
+        ("Projects", "Project master data with live spend"),
+        ("Project Phases", "Phase budget, spent, % complete"),
+        ("Tasks", "Task management + health + dependencies"),
+        ("Gantt Chart", "Weekly Gantt of every phase"),
+        ("Client Master Data", "Homeowners, leads, budget range"),
+        ("Client Communication", "Meetings, calls, site visits"),
+        ("Client Satisfaction", "Surveys, NPS, walkthrough scores"),
+        ("Budget", "Budget planning vs actual"),
+        ("Expenses", "Cost / expense tracker"),
+        ("Finance", "Budget dashboard + charts"),
+        ("Income Tracker", "Client payments and deposits"),
+        ("Profit Loss Project", "Income − cost by project"),
+        ("Cash Flow Tracker", "Monthly in / out / closing"),
+        ("Contractors", "Contractor master list + score"),
+        ("Contractor Performance", "Jobs, paid, snags, rating band"),
+        ("Materials", "Material master + procurement"),
+        ("Material Estimation", "Takeoff, waste, labor + material $"),
+        ("Purchase Orders", "PO header, tax, freight, balance"),
+        ("Material Inventory", "Stock on hand / reserved / value"),
+        ("Worker Master Data", "Crew book, rates, certifications"),
+        ("Worker Attendance", "Daily timesheet + pay"),
+        ("Labor Cost Calc", "Burdened job-costed labor"),
+        ("Productivity Tracker", "Units/hr vs plan"),
+        ("Rooms", "Room area master"),
+        ("Room Work Checklist", "Punch / closeout per room"),
+        ("Room Cost Summary", "Materials / labor / $/sf"),
+        ("Design Studio", "Design requirements + mood boards"),
+        ("Measurements Specs", "Field measure, net area"),
+        ("Material Selection", "Finish board + sample status"),
+        ("Equipment Inventory", "Owned and rented tools"),
+        ("Equipment Usage Log", "Hours and rental cost"),
+        ("Equipment Maintenance", "Tool service due dates"),
+        ("Quality Standards", "What done means on this job"),
+        ("Inspections", "Inspection log"),
+        ("Defect Snagging List", "Punch / snag list"),
+        ("Safety Checklist", "Daily site safety"),
+        ("Incident Accident Log", "Near miss through recordable"),
+        ("Quotes", "Quotation builder"),
+        ("Invoice Management", "Client draws, aging"),
+        ("Payment Receipts", "Money in, tied to invoices"),
+        ("Documents", "Document register"),
+        ("Contract Register", "GC / design / subcontract"),
+        ("Warranties", "Warranty register"),
+        ("After-Sales Service", "Callbacks and claims"),
+        ("Project Status Report", "Printable status pack"),
+        ("Weekly Progress Report", "Week-of calendar + narrative"),
+        ("Admin", "Studio portfolio analytics"),
         ("Settings", "Currency, thresholds, brand"),
         ("Lookups", "Dropdown lists"),
+        ("Roles & Permissions", "Who can do what"),
         ("Audit Log", "Who changed what"),
-        ("Roles & Permissions", "Matrix of who can do what"),
     ]
     ws.cell(23, 1, "Sheet").font = font(9, True, WHITE)
     ws.cell(23, 1).fill = fill(PRIMARY)
@@ -1777,23 +1797,24 @@ def build_roles(wb):
     ws = _sheet(wb, "Roles & Permissions", PRIMARY_SOFT, 12,
                 "Who can see and change what  ·  enforce in the live product; this matrix is the source of truth")
     modules = [
-        "Dashboard", "Projects", "Rooms", "Design Studio", "AI Insights", "Budget",
-        "Expenses", "Finance", "Contractors", "Quotes", "Jobs", "Tasks", "Materials",
-        "Documents", "Messages", "Inventory", "Maintenance", "Inspections", "Payments",
-        "Change Orders", "Permits", "Admin", "Settings", "Users",
+        "Dashboard", "Projects", "Project Phases", "Rooms", "Design Studio", "AI Insights",
+        "Budget", "Expenses", "Finance", "Income Tracker", "Contractors", "Quotes",
+        "Jobs", "Tasks", "Materials", "Purchase Orders", "Workers", "Documents",
+        "Messages", "Inventory", "Maintenance", "Inspections", "Snagging", "Safety",
+        "Payments", "Invoices", "Change Orders", "Permits", "Admin", "Settings", "Users",
     ]
     roles = D.LOOKUPS["Role"]
     # permission codes: F full, E edit own, V view, A approve, — none
     matrix = {
-        "Homeowner": "F F F F V V E V V V V E V F F F F V V A V — — —".split(),
-        "Admin": ["F"] * len(modules),
-        "Project Manager": "F F F V V F F F F F F F F F F V F F F A F V V V".split(),
-        "Interior Designer": "V V F F F V V V V V V F F F F V V — — V — — — —".split(),
-        "Contractor": "V V V V — — E — V V F F E V F — V V V V V — — —".split(),
-        "Subcontractor": "V V V — — — — — — — F F E V F — — V — — — — — —".split(),
-        "Supplier": "— — — — — — — — — V — — F V E — — — V — — — — —".split(),
-        "Inspector": "V V V — — — — — V — V V — F V — — F — — F — — —".split(),
-        "Accountant": "V V — — — F F F V V V — V F — — — — F V V V — V".split(),
+        "Homeowner": "F F V F F V V E V V V V V E V V — F F F F V V V V V A V — — —".split(),
+        "Admin": ["F"] * 31,
+        "Project Manager": "F F F F V V F F F F F F F F F F F F F V F F F F F V A F V V V".split(),
+        "Interior Designer": "V V V F F F V V V — V V V F F V — F F V V — V — — — V — — — —".split(),
+        "Contractor": "V V V V — — — E — — V V F F E V E V F — V V F V V V V V — — —".split(),
+        "Subcontractor": "V V V V — — — — — — — — F F E — E V F — — V F V — — — — — — —".split(),
+        "Supplier": "— — — — — — — — — — — V — — F F — V E — — — — — V — — — — — —".split(),
+        "Inspector": "V V V V — — — — — — V — V V — — — F V — — F F F — — — F — — —".split(),
+        "Accountant": "V V V — — — F F F F V V V — V F — F — — — — — — F F V V V — V".split(),
     }
     ws.cell(4, 1, "Module \\ Role").font = font(9, True, WHITE)
     ws.cell(4, 1).fill = fill(PRIMARY)
@@ -1867,33 +1888,29 @@ def build_workbook() -> Workbook:
     build_dashboard(wb)
     build_start(wb)
 
+    from . import modules as extra_modules
+
+    extra_modules.build_all(wb)
+
     wb.remove(default)
 
-    # Desired tab order
-    order = [
-        "Start Here", "Dashboard", "Projects", "Rooms", "Design Studio", "AI Insights",
-        "Budget", "Expenses", "Finance", "Contractors", "Quotes", "Jobs",
-        "Tasks", "Timeline", "Materials", "Shopping List", "Suppliers",
-        "Documents", "Messages", "Inventory", "Maintenance",
-        "Inspections", "Payments", "Change Orders", "Permits", "Warranties",
-        "Calendar", "Notifications", "Users", "Properties", "Roles & Permissions",
-        "Admin", "Settings", "Lookups", "Audit Log",
-    ]
+    order = extra_modules.SHEET_ORDER
     for i, name in enumerate(order):
         wb.move_sheet(name, offset=i - wb.sheetnames.index(name))
 
     wb.calculation.calcMode = "auto"
     wb.calculation.fullCalcOnLoad = True
     wb.properties.title = "Novality Store — Home Renovation Management System"
-    wb.properties.creator = "premium"
-    wb.properties.lastModifiedBy = "premium"
+    wb.properties.creator = "Novality store"
+    wb.properties.lastModifiedBy = "Novality store"
     wb.properties.description = (
-        "Complete home renovation operating system: projects, rooms, design, "
-        "budget, contractors, tasks, materials, documents, inventory, maintenance. "
-        "Formula cells locked. Unprotect password: premium."
+        "Complete home renovation + contractor operating system: projects, phases, "
+        "clients, budget, labor, materials, equipment, quality, safety, invoices, "
+        "P&L, cash flow, warranties. Formula cells locked. Author: Novality store. "
+        "Unprotect password: premium."
     )
     wb.properties.subject = "Home Renovation Management System"
-    wb.properties.keywords = "premium, home renovation, spreadsheet, google sheets"
+    wb.properties.keywords = "Novality store, home renovation, spreadsheet, google sheets"
     wb.properties.category = "Spreadsheets"
 
     from .protect import protect_workbook

@@ -1,0 +1,4 @@
+Hearth_and_Timber_*.xlsx
+__pycache__/
+*.pyc
+.venv/

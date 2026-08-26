@@ -34,12 +34,13 @@ Share the Google Sheet with your designer, GC, and trades. Use **Commenter** for
 
 ## What is in the file
 
-**35 sheets**, live formulas, dropdowns, conditional color, Gantt, charts, and a loaded sample project (24 August 2026).
+**70 sheets**, live formulas, dropdowns, conditional color, Gantt, charts, Module Hub, and a loaded sample project (24 August 2026).
 
 ### Homeowner
 | Sheet | Role |
 |---|---|
 | **Start Here** | How to use Excel + Google Sheets, color system, clickable module index |
+| **Module Hub** | MODULE QUICK LINKS — Project, Client, Budget, Labor, Quality, Safety, Invoices, Reports |
 | **Dashboard** | Progress, budget / spent / committed / remaining, alerts, next tasks, rooms, visits, AI insight, nav |
 | **Projects** | Multi-project register. Spent and committed roll up from Expenses |
 | **Rooms** | Kitchen, living, bath, bedroom, dining, exterior, laundry, entry — area, budget, style, photos |
@@ -95,6 +96,27 @@ Share the Google Sheet with your designer, GC, and trades. Use **Commenter** for
 | **Lookups** | Every dropdown list. Add values downward — do not delete the sheet |
 | **Audit Log** | Who changed what |
 
+### Contractor ERP (Module Hub)
+
+Same workbook now includes the full Module Quick Links set from a construction operating system:
+
+| Module | Sheets |
+|---|---|
+| **Project** | Projects, Project Phases, Tasks, Gantt Chart, Timeline |
+| **Client** | Client Master Data, Client Communication, Client Satisfaction |
+| **Budget & Finance** | Budget, Expenses, Finance, Change Orders, Income Tracker, P&L, Cash Flow |
+| **Contractor & Vendor** | Contractors, Suppliers, Contractor Performance, Payments |
+| **Materials** | Materials, Material Estimation, Purchase Orders, Material Inventory |
+| **Labor** | Worker Master Data, Worker Attendance, Labor Cost Calc, Productivity Tracker |
+| **Rooms** | Rooms, Room Work Checklist, Room Cost Summary |
+| **Design** | Design Studio, Measurements Specs, Material Selection |
+| **Equipment** | Equipment Inventory, Usage Log, Equipment Maintenance |
+| **Quality** | Quality Standards, Inspections, Defect Snagging List |
+| **Safety** | Safety Checklist, Incident Accident Log, Permits |
+| **Quotation & Invoice** | Quotes, Invoice Management, Payment Receipts |
+| **Documents / Warranty** | Documents, Contract Register, Warranties, After-Sales Service |
+| **Reports** | Project Status Report, Weekly Progress Report, KPI Dashboard |
+
 ---
 
 ## Sample story (already loaded)
@@ -113,7 +135,7 @@ Share the Google Sheet with your designer, GC, and trades. Use **Commenter** for
 
 Ivory cells are **unlocked inputs**. Sand-grey cells are **locked formulas**.
 
-**Author:** `premium`  
+**Author:** `Novality store`  
 **Unprotect password:** `premium`  
 Review → Unprotect Sheet → `premium` if you must edit a formula. Re-protect after.
 
@@ -147,7 +169,7 @@ All money and status math is ordinary Excel / Google Sheets formulas (no VBA, no
 - **Task Health** = Done / On Track / Due Soon / Overdue vs `AsOfDate`
 - **Document / permit / warranty** expiry flags use `AsOfDate`
 - **Inventory warranty end** = `EDATE(purchase, years*12)`
-- **Shopping List** = `FILTER` of Materials still Required / Quoted / Approved
+- **Shopping List** = `INDEX` / `MATCH` on Materials Shop Rank (Required / Quoted / Approved)
 - **Dashboard** and **Finance** read `ActiveProject` from Settings
 
 Change **Settings → Active Project ID** to `PRJ-002` and the homeowner dashboard switches homes.
