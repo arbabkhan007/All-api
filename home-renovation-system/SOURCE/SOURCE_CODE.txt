@@ -1,4 +1,33 @@
-===== generate_workbook.py =====
+NOVALITY STORE — Home Renovation Management System
+Author: Novality store
+Unprotect password: premium
+Version: 2.0.0
+Generated: 2026-08-26
+Sheets: 70  ·  Excel + Google Sheets  ·  no VBA
+
+This file is the complete generator source in plain text.
+Rebuild: python3 -m venv .venv && .venv/bin/pip install -r requirements.txt && python generate_workbook.py
+
+CONTENTS
+  01  generate_workbook.py
+  02  check_integrity.py
+  03  requirements.txt
+  04  hrms/__init__.py
+  05  hrms/styles.py
+  06  hrms/protect.py
+  07  hrms/data.py
+  08  hrms/extra_data.py
+  09  hrms/modules.py
+  10  hrms/workbook.py
+  11  google_apps_script/Code.gs
+  12  google_apps_script/appsscript.json
+  13  google_apps_script/README.md
+
+
+================================================================================
+FILE: generate_workbook.py
+================================================================================
+
 #!/usr/bin/env python3
 """Generate the Novality Store Home Renovation Management System workbook.
 
@@ -45,12 +74,203 @@ def main() -> int:
 if __name__ == "__main__":
     raise SystemExit(main())
 
-===== hrms/__init__.py =====
+
+================================================================================
+FILE: check_integrity.py
+================================================================================
+
+#!/usr/bin/env python3
+"""Integrity check for the protected Novality Store workbook."""
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+from openpyxl import load_workbook
+from openpyxl.cell.cell import MergedCell
+
+ROOT = Path(__file__).resolve().parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from hrms.modules import SHEET_ORDER  # noqa: E402
+
+XLSX = ROOT / "Novality_Store_Home_Renovation_System.xlsx"
+
+EXPECTED_SHEETS = SHEET_ORDER
+AUTHOR = "Novality store"
+
+REQUIRED_NAMES = {
+    "ActiveProject", "HomeownerName", "AsOfDate", "ContingencyPct",
+    "ContingencyFloor", "OverrunAlert", "CompanyName", "TaxRate",
+}
+
+KEY_FORMULAS = {
+    ("Projects", "R5"): "SUMIFS",
+    ("Rooms", "Q5"): "ROUND",
+    ("Budget", "G5"): "SUMIFS",
+    ("Finance", "A6"): "SUMIF",
+    ("Contractors", "M5"): "AVERAGE",
+    ("Tasks", "Q5"): "Overdue",
+    ("Materials", "K5"): "$H5*$J5",
+    ("Dashboard", "D12"): "H8-K8-A12",
+    ("Module Hub", "A4"): "MODULE QUICK LINKS",
+    ("Project Phases", "F5"): "$E5-$D5",
+    ("Labor Cost Calc", "O5"): "$L5+$M5+$N5",
+    ("Invoice Management", "H5"): "$F5+$G5",
+    ("Profit Loss Project", "H5"): "$C5-$G5",
+}
+
+
+def main() -> int:
+    if not XLSX.exists():
+        print("MISSING", XLSX)
+        return 2
+    wb = load_workbook(XLSX, data_only=False)
+    fails = []
+    notes = []
+
+    if list(wb.sheetnames) != EXPECTED_SHEETS:
+        extra = [s for s in wb.sheetnames if s not in EXPECTED_SHEETS]
+        missing = [s for s in EXPECTED_SHEETS if s not in wb.sheetnames]
+        fails.append(
+            f"Sheet order/count mismatch ({len(wb.sheetnames)} vs {len(EXPECTED_SHEETS)}). "
+            f"Missing={missing[:8]} Extra={extra[:8]}"
+        )
+    else:
+        notes.append(f"{len(EXPECTED_SHEETS)} sheets in expected order")
+
+    creator = wb.properties.creator
+    modified = wb.properties.lastModifiedBy
+    if creator != AUTHOR:
+        fails.append(f"creator is {creator!r}, expected {AUTHOR!r}")
+    else:
+        notes.append(f"Author / creator = {AUTHOR}")
+    if modified != AUTHOR:
+        fails.append(f"lastModifiedBy is {modified!r}, expected {AUTHOR!r}")
+    else:
+        notes.append(f"Last modified by = {AUTHOR}")
+
+    names = set(wb.defined_names.keys())
+    missing = REQUIRED_NAMES - names
+    if missing:
+        fails.append(f"Missing named ranges: {sorted(missing)}")
+    else:
+        notes.append(f"{len(names)} named ranges present")
+
+    unprotected = []
+    formula_unlocked = []
+    formula_count = 0
+    locked_formulas = 0
+    banned = []
+    for ws in wb.worksheets:
+        if not ws.protection.sheet:
+            unprotected.append(ws.title)
+        for row in ws.iter_rows(min_row=1, max_row=min(ws.max_row or 1, 80),
+                                min_col=1, max_col=min(ws.max_column or 1, 40)):
+            for cell in row:
+                if isinstance(cell, MergedCell):
+                    continue
+                if isinstance(cell.value, str) and cell.value.startswith("="):
+                    formula_count += 1
+                    val = cell.value.upper()
+                    if "FILTER(" in val or "SMALL(IF" in val:
+                        banned.append(f"{ws.title}!{cell.coordinate}")
+                    if not cell.protection.locked:
+                        formula_unlocked.append(f"{ws.title}!{cell.coordinate}")
+                    else:
+                        locked_formulas += 1
+
+    if unprotected:
+        fails.append(f"Sheets not protected: {unprotected}")
+    else:
+        notes.append(f"All {len(wb.sheetnames)} sheets have sheet protection enabled")
+
+    if formula_unlocked:
+        fails.append(f"{len(formula_unlocked)} formula cells left unlocked (first 8): {formula_unlocked[:8]}")
+    else:
+        notes.append(f"{locked_formulas} sampled formula cells are locked")
+
+    if banned:
+        fails.append(f"Banned FILTER/SMALL-IF formulas: {banned[:6]}")
+    else:
+        notes.append("No FILTER / SMALL(IF) formulas in sampled cells")
+
+    for (sheet, addr), needle in KEY_FORMULAS.items():
+        val = str(wb[sheet][addr].value or "")
+        if needle not in val:
+            fails.append(f"{sheet}!{addr} missing {needle!r}: {val[:80]!r}")
+    notes.append("Key live formulas still present")
+
+    if wb["Projects"]["A5"].value != "PRJ-001":
+        fails.append("Sample project PRJ-001 missing")
+    if wb["Materials"]["P5"].value != "Delivered":
+        fails.append(f"Materials status misaligned: {wb['Materials']['P5'].value!r}")
+    if wb["Settings"]["B5"].value != "Novality Store":
+        fails.append("Settings company name changed")
+    if wb["Client Master Data"]["A5"].value != "CL-001":
+        fails.append("Client master sample missing")
+    notes.append("Sample story (PRJ-001 / Maplewood / CL-001) intact")
+
+    report = ROOT / "INTEGRITY_REPORT.md"
+    lines = [
+        "# Integrity report",
+        "",
+        f"File: `{XLSX.name}` ({XLSX.stat().st_size:,} bytes)",
+        "",
+        "## Result: **" + ("PASS" if not fails else "FAIL") + "**",
+        "",
+        "### Checks passed",
+    ]
+    for n in notes:
+        lines.append(f"- {n}")
+    lines += ["", "### Failures"]
+    if fails:
+        for f in fails:
+            lines.append(f"- {f}")
+    else:
+        lines.append("- None")
+    lines += [
+        "",
+        "### Protection",
+        "",
+        "- Sheet password: `premium`",
+        f"- Author: `{AUTHOR}`",
+        "- Formula / header / dashboard cells: locked",
+        "- Ivory input cells on registers + Settings column B + Lookups: unlocked",
+        "- Unprotect path: Review → Unprotect Sheet → `premium`",
+        "",
+    ]
+    report.write_text("\n".join(lines), encoding="utf-8")
+    print(report.read_text(encoding="utf-8"))
+    return 1 if fails else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+
+
+================================================================================
+FILE: requirements.txt
+================================================================================
+
+openpyxl>=3.1.5
+
+
+================================================================================
+FILE: hrms/__init__.py
+================================================================================
+
 """Home Renovation Management System workbook package."""
 
 __version__ = "2.0.0"
 
-===== hrms/styles.py =====
+
+================================================================================
+FILE: hrms/styles.py
+================================================================================
+
 """Brand styles for the Home Renovation Management System workbook.
 
 Visual direction: premium interior-design studio, not generic construction software.
@@ -386,7 +606,11 @@ STATUS_COLORS = {
 def status_fill(status: str) -> str:
     return STATUS_COLORS.get(status, PRIMARY_SOFT)
 
-===== hrms/protect.py =====
+
+================================================================================
+FILE: hrms/protect.py
+================================================================================
+
 """Lock formula cells and protect every sheet with password 'premium'.
 
 Input / data-entry cells stay unlocked so buyers can run the system.
@@ -537,7 +761,11 @@ def protect_workbook(wb, password: str = SHEET_PASSWORD) -> list:
     wb.properties.category = "Spreadsheets"
     return reports
 
-===== hrms/data.py =====
+
+================================================================================
+FILE: hrms/data.py
+================================================================================
+
 """Sample data for the Novality Store Home Renovation Management System.
 
 Scenario: mid-project whole-home refresh on 24 Aug 2026.
@@ -1477,7 +1705,11 @@ HEADERS = {
     ],
 }
 
-===== hrms/extra_data.py =====
+
+================================================================================
+FILE: hrms/extra_data.py
+================================================================================
+
 """Sample data for the contractor ERP modules added from the Module Quick Links.
 
 Keeps the Maplewood / Gorge sample story (as-of 24 Aug 2026).
@@ -1976,7 +2208,11 @@ AFTER_SALES = [
      "Low", "Sofia Alvarez", date(2026, 9, 15), "In Progress", 0, "Two options out"],
 ]
 
-===== hrms/modules.py =====
+
+================================================================================
+FILE: hrms/modules.py
+================================================================================
+
 """Contractor ERP modules (Module Quick Links).
 
 Excel- and Google-Sheets-safe: SUMIFS / COUNTIFS / INDEX / MATCH / IFERROR only.
@@ -3347,7 +3583,11 @@ SHEET_ORDER = [
     "Settings", "Lookups", "Audit Log",
 ]
 
-===== hrms/workbook.py =====
+
+================================================================================
+FILE: hrms/workbook.py
+================================================================================
+
 """Build the Home Renovation Management System workbook.
 
 Sheets are Excel- and Google-Sheets-compatible: no VBA, no structured table
@@ -5268,174 +5508,435 @@ def build_workbook() -> Workbook:
     protect_workbook(wb, password="premium")
     return wb
 
-===== check_integrity.py =====
-#!/usr/bin/env python3
-"""Integrity check for the protected Novality Store workbook."""
 
-from __future__ import annotations
+================================================================================
+FILE: google_apps_script/Code.gs
+================================================================================
 
-import sys
-from pathlib import Path
+/**
+ * Novality Store — Home Renovation Management System
+ * Google Sheets companion script.
+ *
+ * Install
+ *   1. Upload the .xlsx and open it with Google Sheets (File → Save as Google Sheets).
+ *   2. Extensions → Apps Script.
+ *   3. Replace the default file with this script. Save.
+ *   4. Reload the spreadsheet. Use the "Novality Store" menu.
+ *
+ * Brand
+ *   Primary #16352F  ·  Sand #E8DDCB  ·  Terracotta #C86B4A  ·  Ivory #F8F6F1
+ */
 
-from openpyxl import load_workbook
-from openpyxl.cell.cell import MergedCell
+var BRAND = {
+  primary: '#16352F',
+  sand: '#E8DDCB',
+  terracotta: '#C86B4A',
+  ivory: '#F8F6F1',
+  sage: '#719B7A',
+  amber: '#D99A3D',
+  danger: '#C75C5C',
+};
 
-ROOT = Path(__file__).resolve().parent
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
-
-from hrms.modules import SHEET_ORDER  # noqa: E402
-
-XLSX = ROOT / "Novality_Store_Home_Renovation_System.xlsx"
-
-EXPECTED_SHEETS = SHEET_ORDER
-AUTHOR = "Novality store"
-
-REQUIRED_NAMES = {
-    "ActiveProject", "HomeownerName", "AsOfDate", "ContingencyPct",
-    "ContingencyFloor", "OverrunAlert", "CompanyName", "TaxRate",
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu('Novality Store')
+    .addItem('Open homeowner dashboard', 'goDashboard')
+    .addItem('Open module hub', 'goModuleHub')
+    .addSeparator()
+    .addItem('Add expense…', 'addExpense')
+    .addItem('Add task…', 'addTask')
+    .addItem('Add material…', 'addMaterial')
+    .addItem('Log a message…', 'addMessage')
+    .addSeparator()
+    .addItem('Refresh shopping list', 'refreshShoppingList')
+    .addItem('Highlight overdue tasks', 'highlightOverdue')
+    .addItem('Build this-week calendar view', 'thisWeekAgenda')
+    .addSeparator()
+    .addItem('Email maintenance reminders', 'emailMaintenanceReminders')
+    .addItem('Email unread messages digest', 'emailUnreadDigest')
+    .addSeparator()
+    .addItem('About this system', 'showAbout')
+    .addToUi();
 }
 
-KEY_FORMULAS = {
-    ("Projects", "R5"): "SUMIFS",
-    ("Rooms", "Q5"): "ROUND",
-    ("Budget", "G5"): "SUMIFS",
-    ("Finance", "A6"): "SUMIF",
-    ("Contractors", "M5"): "AVERAGE",
-    ("Tasks", "Q5"): "Overdue",
-    ("Materials", "K5"): "$H5*$J5",
-    ("Dashboard", "D12"): "H8-K8-A12",
-    ("Module Hub", "A4"): "MODULE QUICK LINKS",
-    ("Project Phases", "F5"): "$E5-$D5",
-    ("Labor Cost Calc", "O5"): "$L5+$M5+$N5",
-    ("Invoice Management", "H5"): "$F5+$G5",
-    ("Profit Loss Project", "H5"): "$C5-$G5",
+function goDashboard() {
+  var ss = SpreadsheetApp.getActive();
+  var sh = ss.getSheetByName('Dashboard');
+  if (sh) ss.setActiveSheet(sh);
+}
+
+function showAbout() {
+  var html = HtmlService.createHtmlOutput(
+    '<div style="font-family:Georgia,serif;color:#202522;background:#F8F6F1;padding:16px">' +
+      '<h2 style="color:#16352F;margin:0 0 8px">Novality Store</h2>' +
+      '<p style="margin:0 0 12px">Home Renovation Management System — a digital twin of the home.</p>' +
+      '<p>Every room, material, contractor, expense, document, task, photo, warranty and ' +
+      'maintenance activity is connected to a place in the house.</p>' +
+      '<p style="color:#C86B4A"><b>Tip:</b> change <i>Settings → Active Project ID</i> to switch dashboards.</p>' +
+      '</div>'
+  )
+    .setWidth(420)
+    .setHeight(260);
+  SpreadsheetApp.getUi().showModalDialog(html, 'About');
+}
+
+function setting_(key) {
+  var sh = SpreadsheetApp.getActive().getSheetByName('Settings');
+  if (!sh) return '';
+  var values = sh.getRange(5, 1, 40, 2).getValues();
+  for (var i = 0; i < values.length; i++) {
+    if (String(values[i][0]) === key) return values[i][1];
+  }
+  return '';
+}
+
+function activeProject_() {
+  return String(setting_('Active Project ID') || 'PRJ-001');
+}
+
+function nextId_(sheetName, prefix, col) {
+  var sh = SpreadsheetApp.getActive().getSheetByName(sheetName);
+  var last = sh.getLastRow();
+  if (last < 5) return prefix + '-001';
+  var ids = sh.getRange(5, col || 1, last - 4, 1).getValues();
+  var max = 0;
+  for (var i = 0; i < ids.length; i++) {
+    var m = String(ids[i][0]).match(/(\d+)$/);
+    if (m) max = Math.max(max, parseInt(m[1], 10));
+  }
+  return prefix + '-' + ('000' + (max + 1)).slice(-3);
+}
+
+function firstEmptyRow_(sh) {
+  var last = sh.getLastRow();
+  return last < 5 ? 5 : last + 1;
+}
+
+function prompt_(title, fields) {
+  var ui = SpreadsheetApp.getUi();
+  var result = {};
+  for (var i = 0; i < fields.length; i++) {
+    var f = fields[i];
+    var resp = ui.prompt(title, f.label, ui.ButtonSet.OK_CANCEL);
+    if (resp.getSelectedButton() !== ui.Button.OK) return null;
+    result[f.key] = resp.getResponseText();
+  }
+  return result;
+}
+
+function addExpense() {
+  var data = prompt_('Add expense', [
+    { key: 'desc', label: 'Description (e.g. Island slab deposit)' },
+    { key: 'amount', label: 'Amount in USD (e.g. 1860)' },
+    { key: 'vendor', label: 'Vendor' },
+    { key: 'category', label: 'Category (Labor / Materials / Design / Permits / Delivery / Contingency / Appliances / Furniture / Inspections / Other)' },
+    { key: 'status', label: 'Status (Planned / Committed / Paid)' },
+    { key: 'room', label: 'Room ID (e.g. RM-01) or leave blank' },
+  ]);
+  if (!data) return;
+  var sh = SpreadsheetApp.getActive().getSheetByName('Expenses');
+  var row = firstEmptyRow_(sh);
+  var id = nextId_('Expenses', 'EXP');
+  sh.getRange(row, 1, 1, 12).setValues([
+    [
+      id,
+      new Date(),
+      activeProject_(),
+      data.room,
+      data.category || 'Other',
+      data.vendor,
+      data.desc,
+      Number(data.amount) || 0,
+      'ACH',
+      data.status || 'Planned',
+      '',
+      setting_('Homeowner'),
+    ],
+  ]);
+  toast_('Logged ' + id + ' — ' + data.desc);
+}
+
+function addTask() {
+  var data = prompt_('Add task', [
+    { key: 'title', label: 'Task title' },
+    { key: 'room', label: 'Room ID (e.g. RM-01)' },
+    { key: 'owner', label: 'Assignee' },
+    { key: 'deadline', label: 'Deadline YYYY-MM-DD' },
+    { key: 'priority', label: 'Priority (Critical / High / Medium / Low)' },
+  ]);
+  if (!data) return;
+  var sh = SpreadsheetApp.getActive().getSheetByName('Tasks');
+  var row = firstEmptyRow_(sh);
+  var id = nextId_('Tasks', 'TSK');
+  var deadline = data.deadline ? new Date(data.deadline) : '';
+  sh.getRange(row, 1, 1, 15).setValues([
+    [
+      id,
+      activeProject_(),
+      data.room,
+      data.title,
+      '',
+      data.owner,
+      'Homeowner',
+      'To Do',
+      data.priority || 'Medium',
+      new Date(),
+      deadline,
+      0,
+      '',
+      0,
+      '',
+    ],
+  ]);
+  // copy formula cells if present on row above
+  if (row > 5) {
+    sh.getRange(row - 1, 16, 1, 2).copyTo(sh.getRange(row, 16, 1, 2));
+  }
+  toast_('Created ' + id + ' — ' + data.title);
+}
+
+function addMaterial() {
+  var data = prompt_('Add material', [
+    { key: 'product', label: 'Product name' },
+    { key: 'sku', label: 'SKU / QR' },
+    { key: 'qty', label: 'Quantity required' },
+    { key: 'price', label: 'Unit price' },
+    { key: 'supplier', label: 'Supplier' },
+    { key: 'room', label: 'Room ID' },
+  ]);
+  if (!data) return;
+  var sh = SpreadsheetApp.getActive().getSheetByName('Materials');
+  var row = firstEmptyRow_(sh);
+  var id = nextId_('Materials', 'MAT');
+  sh.getRange(row, 1, 1, 21).setValues([
+    [
+      id,
+      activeProject_(),
+      data.room,
+      data.product,
+      '',
+      data.sku,
+      'Other',
+      Number(data.qty) || 1,
+      'ea',
+      Number(data.price) || 0,
+      '',
+      data.supplier,
+      0,
+      0,
+      0,
+      'Required',
+      0,
+      '',
+      '',
+      '',
+      data.sku,
+    ],
+  ]);
+  if (row > 5) {
+    sh.getRange(row - 1, 11).copyTo(sh.getRange(row, 11));
+    sh.getRange(row - 1, 22).copyTo(sh.getRange(row, 22));
+  }
+  toast_('Added ' + id + ' — ' + data.product);
+}
+
+function addMessage() {
+  var data = prompt_('Log a message', [
+    { key: 'to', label: 'To (name)' },
+    { key: 'room', label: 'Room / task context' },
+    { key: 'body', label: 'Message' },
+  ]);
+  if (!data) return;
+  var sh = SpreadsheetApp.getActive().getSheetByName('Messages');
+  var row = firstEmptyRow_(sh);
+  var id = nextId_('Messages', 'MSG');
+  sh.getRange(row, 1, 1, 11).setValues([
+    [
+      id,
+      new Date(),
+      activeProject_(),
+      data.room,
+      setting_('Homeowner'),
+      data.to,
+      'App',
+      data.body,
+      '',
+      '',
+      'No',
+    ],
+  ]);
+  toast_('Message ' + id + ' logged');
+}
+
+function refreshShoppingList() {
+  var ss = SpreadsheetApp.getActive();
+  var shop = ss.getSheetByName('Shopping List');
+  if (shop) {
+    ss.setActiveSheet(shop);
+    SpreadsheetApp.flush();
+    toast_('Shopping List uses FILTER of Materials still Required / Quoted / Approved.');
+  }
+}
+
+function highlightOverdue() {
+  var sh = SpreadsheetApp.getActive().getSheetByName('Tasks');
+  var last = sh.getLastRow();
+  if (last < 5) return;
+  var range = sh.getRange(5, 17, last - 4, 1); // Health
+  var values = range.getValues();
+  var backgrounds = [];
+  for (var i = 0; i < values.length; i++) {
+    var v = String(values[i][0]);
+    if (v === 'Overdue') backgrounds.push([BRAND.danger]);
+    else if (v === 'Due Soon') backgrounds.push([BRAND.amber]);
+    else if (v === 'Done') backgrounds.push([BRAND.sage]);
+    else backgrounds.push([BRAND.ivory]);
+  }
+  range.setBackgrounds(backgrounds);
+  toast_('Overdue tasks highlighted on Tasks!Q');
+}
+
+function thisWeekAgenda() {
+  var cal = SpreadsheetApp.getActive().getSheetByName('Calendar');
+  var last = cal.getLastRow();
+  if (last < 5) return;
+  var values = cal.getRange(5, 1, last - 4, 7).getValues();
+  var today = new Date();
+  var end = new Date(today.getTime() + 7 * 86400000);
+  var lines = ['This week at Maplewood / Gorge', ''];
+  for (var i = 0; i < values.length; i++) {
+    var d = values[i][0];
+    if (!(d instanceof Date)) continue;
+    if (d >= strip_(today) && d <= end) {
+      lines.push(
+        Utilities.formatDate(d, Session.getScriptTimeZone(), 'EEE d MMM') +
+          '  ' +
+          values[i][1] +
+          '  ·  ' +
+          values[i][2] +
+          '  ·  ' +
+          values[i][5]
+      );
+    }
+  }
+  if (lines.length === 2) lines.push('Nothing scheduled in the next 7 days.');
+  SpreadsheetApp.getUi().alert(lines.join('\n'));
+}
+
+function emailMaintenanceReminders() {
+  var sh = SpreadsheetApp.getActive().getSheetByName('Maintenance');
+  var last = sh.getLastRow();
+  if (last < 5) return;
+  var values = sh.getRange(5, 1, last - 4, 14).getValues();
+  var due = [];
+  for (var i = 0; i < values.length; i++) {
+    var flag = String(values[i][13]);
+    if (flag.indexOf('OVERDUE') >= 0 || flag.indexOf('Due soon') >= 0) {
+      due.push(values[i][1] + ' — ' + values[i][6] + ' (' + flag + ')');
+    }
+  }
+  var email = Session.getActiveUser().getEmail();
+  if (!email) {
+    SpreadsheetApp.getUi().alert('No user email available in this context.');
+    return;
+  }
+  if (!due.length) {
+    toast_('No maintenance items due.');
+    return;
+  }
+  MailApp.sendEmail({
+    to: email,
+    subject: 'Novality Store — maintenance due',
+    htmlBody:
+      '<div style="font-family:Georgia,serif;color:#202522">' +
+      '<h2 style="color:#16352F">Maintenance due</h2><ul><li>' +
+      due.join('</li><li>') +
+      '</li></ul></div>',
+  });
+  toast_('Sent ' + due.length + ' reminder(s) to ' + email);
+}
+
+function emailUnreadDigest() {
+  var sh = SpreadsheetApp.getActive().getSheetByName('Messages');
+  var last = sh.getLastRow();
+  if (last < 5) return;
+  var values = sh.getRange(5, 1, last - 4, 11).getValues();
+  var unread = [];
+  for (var i = 0; i < values.length; i++) {
+    if (String(values[i][10]) === 'No') {
+      unread.push(values[i][4] + ' → ' + values[i][5] + ': ' + values[i][7]);
+    }
+  }
+  var email = Session.getActiveUser().getEmail();
+  if (!unread.length) {
+    toast_('No unread messages.');
+    return;
+  }
+  MailApp.sendEmail({
+    to: email,
+    subject: 'Novality Store — unread project messages',
+    htmlBody:
+      '<div style="font-family:Georgia,serif;color:#202522">' +
+      '<h2 style="color:#16352F">Unread messages</h2><ul><li>' +
+      unread.join('</li><li>') +
+      '</li></ul></div>',
+  });
+  toast_('Digest sent to ' + email);
+}
+
+function toast_(msg) {
+  SpreadsheetApp.getActive().toast(msg, 'Novality Store', 6);
+}
+
+function strip_(d) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
 
-def main() -> int:
-    if not XLSX.exists():
-        print("MISSING", XLSX)
-        return 2
-    wb = load_workbook(XLSX, data_only=False)
-    fails = []
-    notes = []
+================================================================================
+FILE: google_apps_script/appsscript.json
+================================================================================
 
-    if list(wb.sheetnames) != EXPECTED_SHEETS:
-        extra = [s for s in wb.sheetnames if s not in EXPECTED_SHEETS]
-        missing = [s for s in EXPECTED_SHEETS if s not in wb.sheetnames]
-        fails.append(
-            f"Sheet order/count mismatch ({len(wb.sheetnames)} vs {len(EXPECTED_SHEETS)}). "
-            f"Missing={missing[:8]} Extra={extra[:8]}"
-        )
-    else:
-        notes.append(f"{len(EXPECTED_SHEETS)} sheets in expected order")
-
-    creator = wb.properties.creator
-    modified = wb.properties.lastModifiedBy
-    if creator != AUTHOR:
-        fails.append(f"creator is {creator!r}, expected {AUTHOR!r}")
-    else:
-        notes.append(f"Author / creator = {AUTHOR}")
-    if modified != AUTHOR:
-        fails.append(f"lastModifiedBy is {modified!r}, expected {AUTHOR!r}")
-    else:
-        notes.append(f"Last modified by = {AUTHOR}")
-
-    names = set(wb.defined_names.keys())
-    missing = REQUIRED_NAMES - names
-    if missing:
-        fails.append(f"Missing named ranges: {sorted(missing)}")
-    else:
-        notes.append(f"{len(names)} named ranges present")
-
-    unprotected = []
-    formula_unlocked = []
-    formula_count = 0
-    locked_formulas = 0
-    banned = []
-    for ws in wb.worksheets:
-        if not ws.protection.sheet:
-            unprotected.append(ws.title)
-        for row in ws.iter_rows(min_row=1, max_row=min(ws.max_row or 1, 80),
-                                min_col=1, max_col=min(ws.max_column or 1, 40)):
-            for cell in row:
-                if isinstance(cell, MergedCell):
-                    continue
-                if isinstance(cell.value, str) and cell.value.startswith("="):
-                    formula_count += 1
-                    val = cell.value.upper()
-                    if "FILTER(" in val or "SMALL(IF" in val:
-                        banned.append(f"{ws.title}!{cell.coordinate}")
-                    if not cell.protection.locked:
-                        formula_unlocked.append(f"{ws.title}!{cell.coordinate}")
-                    else:
-                        locked_formulas += 1
-
-    if unprotected:
-        fails.append(f"Sheets not protected: {unprotected}")
-    else:
-        notes.append(f"All {len(wb.sheetnames)} sheets have sheet protection enabled")
-
-    if formula_unlocked:
-        fails.append(f"{len(formula_unlocked)} formula cells left unlocked (first 8): {formula_unlocked[:8]}")
-    else:
-        notes.append(f"{locked_formulas} sampled formula cells are locked")
-
-    if banned:
-        fails.append(f"Banned FILTER/SMALL-IF formulas: {banned[:6]}")
-    else:
-        notes.append("No FILTER / SMALL(IF) formulas in sampled cells")
-
-    for (sheet, addr), needle in KEY_FORMULAS.items():
-        val = str(wb[sheet][addr].value or "")
-        if needle not in val:
-            fails.append(f"{sheet}!{addr} missing {needle!r}: {val[:80]!r}")
-    notes.append("Key live formulas still present")
-
-    if wb["Projects"]["A5"].value != "PRJ-001":
-        fails.append("Sample project PRJ-001 missing")
-    if wb["Materials"]["P5"].value != "Delivered":
-        fails.append(f"Materials status misaligned: {wb['Materials']['P5'].value!r}")
-    if wb["Settings"]["B5"].value != "Novality Store":
-        fails.append("Settings company name changed")
-    if wb["Client Master Data"]["A5"].value != "CL-001":
-        fails.append("Client master sample missing")
-    notes.append("Sample story (PRJ-001 / Maplewood / CL-001) intact")
-
-    report = ROOT / "INTEGRITY_REPORT.md"
-    lines = [
-        "# Integrity report",
-        "",
-        f"File: `{XLSX.name}` ({XLSX.stat().st_size:,} bytes)",
-        "",
-        "## Result: **" + ("PASS" if not fails else "FAIL") + "**",
-        "",
-        "### Checks passed",
-    ]
-    for n in notes:
-        lines.append(f"- {n}")
-    lines += ["", "### Failures"]
-    if fails:
-        for f in fails:
-            lines.append(f"- {f}")
-    else:
-        lines.append("- None")
-    lines += [
-        "",
-        "### Protection",
-        "",
-        "- Sheet password: `premium`",
-        f"- Author: `{AUTHOR}`",
-        "- Formula / header / dashboard cells: locked",
-        "- Ivory input cells on registers + Settings column B + Lookups: unlocked",
-        "- Unprotect path: Review → Unprotect Sheet → `premium`",
-        "",
-    ]
-    report.write_text("\n".join(lines), encoding="utf-8")
-    print(report.read_text(encoding="utf-8"))
-    return 1 if fails else 0
+{
+  "timeZone": "America/Los_Angeles",
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/spreadsheets.currentonly",
+    "https://www.googleapis.com/auth/script.send_mail"
+  ]
+}
 
 
-if __name__ == "__main__":
-    sys.exit(main())
+================================================================================
+FILE: google_apps_script/README.md
+================================================================================
+
+# Google Sheets companion
+
+Turn the Excel workbook into a live Google Sheet with a **Novality Store** menu.
+
+## 5 minutes
+
+1. Upload `Novality_Store_Home_Renovation_System.xlsx` to [Google Drive](https://drive.google.com).
+2. Right-click → **Open with → Google Sheets**.
+3. **File → Save as Google Sheets**.
+4. **Extensions → Apps Script**.
+5. Delete the stub `myFunction` and paste [`Code.gs`](Code.gs). Save (Ctrl/Cmd+S).
+6. Close the script editor and **reload the spreadsheet**.
+7. Allow permissions the first time you run a menu item that sends email.
+
+You now have a Google Sheet with every module, live formulas, and:
+
+| Menu | Action |
+|---|---|
+| Open homeowner dashboard | Jump to Dashboard |
+| Add expense / task / material / message | Prompt → new ID'd row |
+| Refresh shopping list | Opens the FILTER sheet |
+| Highlight overdue tasks | Colors Tasks health |
+| Build this-week calendar view | Next 7 days |
+| Email maintenance reminders | Due / overdue lines to you |
+| Email unread messages digest | Unread threads to you |
+
+`appsscript.json` declares the two scopes the script needs (this spreadsheet + Gmail send). If you paste only `Code.gs`, Apps Script will still prompt for those scopes on first run.
+

@@ -8,10 +8,10 @@ Unprotect password: premium
 2. Read UNLOCK.txt (password) and README.md (how the 70 sheets work).
    Open the Module Hub tab for the contractor ERP quick links.
 
-3. To sell on Etsy: open etsy_listing_kit/ETSY_LISTING.md
-   Images are in etsy_listing_kit/images/ (square, landscape, portrait, story).
+3. To sell on Etsy: use listing_kit_1448x1086/ (all photos 1448x1086)
+   or the older mixed-ratio set in etsy_listing_kit/images/.
 
-4. To rebuild or customize: source is in SOURCE/ and also
-   concatenated in SOURCE/SOURCE_CODE.txt.
+4. Source in one text file: SOURCE_CODE.txt
+   (same dump in SOURCE/SOURCE_CODE.txt). Rebuild with generate_workbook.py.
 
 5. Integrity of this build: INTEGRITY_REPORT.md (PASS).
