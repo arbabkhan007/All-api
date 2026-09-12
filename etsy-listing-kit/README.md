@@ -39,6 +39,13 @@ Everything in here is built to fit inside Etsy's real character limits, so you c
 | [04-description-template.md](04-description-template.md) | Description skeleton with the first-160 hook |
 | [05-worked-examples.md](05-worked-examples.md) | Three complete listings you can copy and adapt |
 | [06-pre-publish-checklist.md](06-pre-publish-checklist.md) | Final pass before you hit publish, plus a blank worksheet |
+| [07-listing-no-sew-gnome.md](07-listing-no-sew-gnome.md) | Finished listing for a specific product: the No-Sew Christmas Gnome PDF crochet pattern |
+
+---
+
+## Listing a specific product?
+
+[07-listing-no-sew-gnome.md](07-listing-no-sew-gnome.md) is the kit applied end to end — title, three tag sets to A/B test, full description copy, and category/attributes for a real digital pattern. Use it as the template for your next product: copy the file, swap the product snapshot, and re-check every character count.
 
 ---
 
