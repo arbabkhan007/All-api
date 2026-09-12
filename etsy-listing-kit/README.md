@@ -45,6 +45,17 @@ Everything in here is built to fit inside Etsy's real character limits, so you c
 | [10-listing-bobble-tree-skirt.md](10-listing-bobble-tree-skirt.md) | Finished listing for the Bobble Snowflake Tree Skirt |
 | [11-listing-interchangeable-wreath.md](11-listing-interchangeable-wreath.md) | Finished listing for the Interchangeable Christmas Wreath |
 | [12-pricing-research.md](12-pricing-research.md) | Competitor price data and recommended prices for all five patterns |
+| [13-listing-the-kit.md](13-listing-the-kit.md) | Listing copy for selling this kit itself as a digital product |
+
+---
+
+## Selling the kit itself
+
+The whole kit is packaged as a sellable product in [`../shop/etsy-listing-kit/`](../shop/etsy-listing-kit/): a 24-page PDF guide plus a 4-page printable worksheet pack, built from the verified content in this folder.
+
+- **Listing copy** → [13-listing-the-kit.md](13-listing-the-kit.md) (title, three tag sets, description, price)
+- **The product files** → [`shop/etsy-listing-kit/product/`](../shop/etsy-listing-kit/product/)
+- **How to rebuild it** → [`shop/etsy-listing-kit/README.md`](../shop/etsy-listing-kit/README.md)
 
 ---
 
