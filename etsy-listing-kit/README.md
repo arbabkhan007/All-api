@@ -41,22 +41,25 @@ Everything in here is built to fit inside Etsy's real character limits, so you c
 | [06-pre-publish-checklist.md](06-pre-publish-checklist.md) | Final pass before you hit publish, plus a blank worksheet |
 | [07-listing-no-sew-gnome.md](07-listing-no-sew-gnome.md) | Finished listing for a specific product: the No-Sew Christmas Gnome PDF crochet pattern |
 | [08-listing-bobble-christmas-tree.md](08-listing-bobble-christmas-tree.md) | Finished listing for the Bobble Christmas Tree PDF crochet pattern |
+| [09-listing-christmas-ornament-bundle.md](09-listing-christmas-ornament-bundle.md) | Finished listing for the Christmas Ornament Bundle (3 patterns in 1) |
+| [10-listing-bobble-tree-skirt.md](10-listing-bobble-tree-skirt.md) | Finished listing for the Bobble Snowflake Tree Skirt |
+| [11-listing-interchangeable-wreath.md](11-listing-interchangeable-wreath.md) | Finished listing for the Interchangeable Christmas Wreath |
 
 ---
 
 ## Listing a specific product?
 
-Two worked product listings show the kit applied end to end — title, three tag sets to A/B test, full description copy, and category/attributes:
+Five worked product listings show the kit applied end to end — title, three tag sets to A/B test, full description copy, and category/attributes:
 
-| | [07 · No-Sew Christmas Gnome](07-listing-no-sew-gnome.md) | [08 · Bobble Christmas Tree](08-listing-bobble-christmas-tree.md) |
-|---|---|---|
-| Skill level | Beginner | Easy – Intermediate |
-| Make time | 1–2 hours | 2–3 hours |
-| Size | 11–12.5 cm | 12 cm (15–16 cm in chunky) |
-| Hook | 3.5 mm | 4 mm (3 mm / 5 mm variants) |
-| Hook phrase | No-sew, one-piece | Bobble tiers, one-piece |
+| | Design | Skill | The hook phrase |
+|---|---|---|---|
+| [07](07-listing-no-sew-gnome.md) | No-Sew Christmas Gnome | Beginner | No-sew, one piece |
+| [08](08-listing-bobble-christmas-tree.md) | Bobble Christmas Tree | Easy – Intermediate | Bobble tiers, one piece |
+| [09](09-listing-christmas-ornament-bundle.md) | Christmas Ornament Bundle | Beginner | Three patterns, stash buster |
+| [10](10-listing-bobble-tree-skirt.md) | Bobble Snowflake Tree Skirt | Easy – Intermediate | Three sizes, 12-spoke |
+| [11](11-listing-interchangeable-wreath.md) | Interchangeable Christmas Wreath | Beginner | Removable decorations |
 
-Use either as the template for your next product: copy the file, swap the product snapshot, and re-check every character count.
+Use any of them as the template for your next product: copy the file, swap the product snapshot, and re-check every character count.
 
 ---
 
