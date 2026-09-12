@@ -5,7 +5,7 @@ The listing kit packaged as a product you can sell, not just use.
 ```bash
 shop/etsy-listing-kit
 ├── README.md                 # this file
-├── build/
+├── tools/
 │   └── build_product.py       # assembles the product and renders the PDFs
 └── product/
     ├── template.md            # source: prose with {{PLACEHOLDER}} slots
@@ -22,7 +22,7 @@ per-pattern listing files, so the PDF can never drift from the verified content.
 
 ```bash
 python3 -m venv /tmp/pdfenv && /tmp/pdfenv/bin/pip install reportlab
-cd shop/etsy-listing-kit/build
+cd shop/etsy-listing-kit/tools
 /tmp/pdfenv/bin/python build_product.py
 ```
 
@@ -30,7 +30,7 @@ cd shop/etsy-listing-kit/build
 
 1. Write `etsy-listing-kit/12-…md` (or the next number) in the same format as 07–11.
 2. Add a chapter to `product/template.md` with `{{TITLE_XX}}`, `{{TAGS_XX}}`, `{{DESC_XX}}`.
-3. Add the file to the `sources` dict in `build/build_product.py`.
+3. Add the file to the `sources` dict in `tools/build_product.py`.
 4. Rebuild.
 
 The build fails loudly if any placeholder is left unresolved.
