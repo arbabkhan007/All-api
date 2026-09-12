@@ -44,6 +44,21 @@ Everything in here is built to fit inside Etsy's real character limits, so you c
 | [09-listing-christmas-ornament-bundle.md](09-listing-christmas-ornament-bundle.md) | Finished listing for the Christmas Ornament Bundle (3 patterns in 1) |
 | [10-listing-bobble-tree-skirt.md](10-listing-bobble-tree-skirt.md) | Finished listing for the Bobble Snowflake Tree Skirt |
 | [11-listing-interchangeable-wreath.md](11-listing-interchangeable-wreath.md) | Finished listing for the Interchangeable Christmas Wreath |
+| [12-pricing-research.md](12-pricing-research.md) | Competitor price data and recommended prices for all five patterns |
+
+---
+
+## What should I charge?
+
+[12-pricing-research.md](12-pricing-research.md) has observed competitor prices in all four categories, a recommended price per pattern with a floor and ceiling, fee math, and a 90-day launch plan.
+
+| Design | Price |
+|---|---:|
+| No-Sew Christmas Gnome | $5.50 |
+| Bobble Christmas Tree | $6.50 |
+| Christmas Ornament Bundle | $7.50 |
+| Bobble Snowflake Tree Skirt | $8.50 |
+| Interchangeable Christmas Wreath | $9.50 |
 
 ---
 
